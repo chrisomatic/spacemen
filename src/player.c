@@ -15,7 +15,8 @@ void player_init()
 
     p->x = 100.0;
     p->y = 100.0;
-    p->velocity = 0.0;
+    p->vel_x = 0.0;
+    p->vel_y = 0.0;
     p->rotation = 0.0;
 
     window_controls_add_key(&p->actions[PLAYER_ACTION_ACC].state, GLFW_KEY_W);
@@ -59,14 +60,16 @@ void player_update(double delta_t)
     bool left  = p->actions[PLAYER_ACTION_LEFT].state;
     bool right = p->actions[PLAYER_ACTION_RIGHT].state;
 
-    p->accel = acc ? 60.0 : 0.0;
+    if(acc)
+    {
+        float angle = RAD(p->rotation);
+        p->vel_x += 20*cos(angle);
+        p->vel_y -= 20*sin(angle);
 
-    p->velocity += p->accel*delta_t;
+    }
 
-    float angle = RAD(p->rotation);
-
-    p->x += p->velocity*cos(angle)*delta_t;
-    p->y += p->velocity*sin(angle)*delta_t;
+    p->x += p->vel_x*delta_t;
+    p->y += p->vel_y*delta_t;
 
     if(left)
     {

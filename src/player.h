@@ -23,8 +23,7 @@ typedef struct
 
 typedef struct
 {
-    float accel;
-    float velocity;
+    float vel_x, vel_y;
     float x,y;
     float rotation;
     PlayerAction actions[PLAYER_ACTION_MAX];
