@@ -2,9 +2,12 @@
 
 #include <stdbool.h>
 
+#define MAX_PLAYERS 8
+
 enum PlayerActions
 {
-    PLAYER_ACTION_ACC,
+    PLAYER_ACTION_FORWARD,
+    PLAYER_ACTION_BACKWARD,
     PLAYER_ACTION_LEFT,
     PLAYER_ACTION_RIGHT,
     PLAYER_ACTION_SHOOT,
@@ -23,12 +26,22 @@ typedef struct
 
 typedef struct
 {
-    float vel_x, vel_y;
-    float x,y;
-    float rotation;
+    bool active;
+
+    Vector2f pos;
+    Vector2f vel;
+    float velocity_limit;
+    float accel_factor;
+    float turn_rate;
+    float angle_deg;
     PlayerAction actions[PLAYER_ACTION_MAX];
 
 } Player;
 
+extern Player players[MAX_PLAYERS];
+extern Player* player;
+extern int player_count;
+
 void player_init();
-void player_update(double delta_t);
+void player_update(Player* p, double delta_t);
+void player_draw();

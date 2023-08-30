@@ -11,7 +11,9 @@ gcc core/gfx.c \
     core/window.c \
     core/imgui.c \
     core/glist.c \
+    core/socket.c \
     player.c \
+    net.c \
     main.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm -O2 \

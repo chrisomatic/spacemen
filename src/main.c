@@ -118,7 +118,7 @@ void deinit()
 
 void simulate(double dt)
 {
-    player_update(dt);
+    player_update(&players[0], dt);
 }
 
 static char lines[100][100+1] = {0};
