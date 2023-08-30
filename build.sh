@@ -14,6 +14,7 @@ gcc core/gfx.c \
     core/socket.c \
     player.c \
     net.c \
+    projectile.c \
     main.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm -O2 \

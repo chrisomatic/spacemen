@@ -7,6 +7,7 @@
 #include "math2d.h"
 #include "imgui.h"
 #include "log.h"
+#include "projectile.h"
 #include "player.h"
 
 // =========================
@@ -107,6 +108,9 @@ void init()
     LOGI(" - Player.");
     player_init();
 
+    LOGI(" - Projectile.");
+    projectile_init();
+
     //imgui_load_theme("nord_deep.theme");
 }
 
@@ -119,6 +123,7 @@ void deinit()
 void simulate(double dt)
 {
     player_update(&players[0], dt);
+    projectile_update(dt);
 }
 
 static char lines[100][100+1] = {0};
@@ -136,7 +141,15 @@ void draw()
 
     gfx_clear_buffer(r,g,b);
 
+    // projectiles
+    // -----------------------------------------------------------------------
+    for(int i = 0; i < plist->count; ++i)
+    {
+        projectile_draw(&projectiles[i]);
+    }
+
     player_draw();
+
 
     if(debug_enabled)
     {

@@ -1,5 +1,6 @@
 
 #include "main.h"
+#include "projectile.h"
 #include "player.h"
 #include "core/gfx.h"
 #include "core/window.h"
@@ -31,6 +32,7 @@ void player_init()
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_J);
     window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
 }
 
 void player_update(Player* p, double delta_t)
@@ -109,6 +111,31 @@ void player_update(Player* p, double delta_t)
     {
         player->angle_deg -= player->turn_rate;
     }
+
+    if(player->actions[PLAYER_ACTION_RESET].toggled_on)
+    {
+        player->pos.x = VIEW_WIDTH/2.0;
+        player->pos.y = VIEW_HEIGHT/2.0;
+        player->vel.x = 0.0;
+        player->vel.y = 0.0;
+    }
+
+    if(player->actions[PLAYER_ACTION_SHOOT].toggled_on)
+    {
+        projectile_add(player, 0);
+        player->proj_cooldown = 0.1;
+    }
+    else if(player->actions[PLAYER_ACTION_SHOOT].state)
+    {
+        player->proj_cooldown -= delta_t;
+        if(player->proj_cooldown <= 0.0)
+        {
+            projectile_add(player, 0);
+            player->proj_cooldown = 0.1;
+        }
+
+    }
+
 }
 
 void player_draw()

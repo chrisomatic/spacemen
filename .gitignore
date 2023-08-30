@@ -1,0 +1,4 @@
+**/.vscode
+bin/
+win/x64/
+win/.vs/

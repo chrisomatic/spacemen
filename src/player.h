@@ -13,6 +13,7 @@ enum PlayerActions
     PLAYER_ACTION_SHOOT,
     PLAYER_ACTION_SHIELD,
     PLAYER_ACTION_DEBUG,
+    PLAYER_ACTION_RESET,
     PLAYER_ACTION_MAX
 };
 
@@ -36,6 +37,7 @@ typedef struct
     float angle_deg;
     PlayerAction actions[PLAYER_ACTION_MAX];
 
+    float proj_cooldown;
 } Player;
 
 extern Player players[MAX_PLAYERS];
