@@ -9,13 +9,15 @@
 #include "log.h"
 #include "projectile.h"
 #include "player.h"
+#include "net.h"
 
 // =========================
 // Global Vars
 // =========================
 
+GameRole role;
 bool paused = false;
-Timer main_timer = {0};
+Timer game_timer = {0};
 
 bool debug_enabled = false;
 
@@ -23,10 +25,14 @@ bool debug_enabled = false;
 // Function Prototypes
 // =========================
 
-void start_gui();
+void parse_args(int argc, char* argv[]);
 void init();
 void deinit();
+void start_local();
+void start_client();
+void start_server();
 void simulate(double);
+void simulate_client(double);
 void draw();
 
 // =========================
@@ -35,8 +41,57 @@ void draw();
 
 int main(int argc, char* argv[])
 {
+    init_timer();
+    log_init(0);
+
+    parse_args(argc, argv);
+
+    switch(role)
+    {
+        case ROLE_LOCAL:
+            start_local();
+            break;
+        case ROLE_CLIENT:
+            start_client();
+            break;
+        case ROLE_SERVER:
+            start_server();
+            break;
+    }
+
+    return 0;
+}
+
+void parse_args(int argc, char* argv[])
+{
+    role = ROLE_LOCAL;
+
+    if(argc > 1)
+    {
+        for(int i = 1; i < argc; ++i)
+        {
+            if(argv[i][0] == '-' && argv[i][1] == '-')
+            {
+                // server
+                if(strncmp(argv[i]+2,"server",6) == 0)
+                    role = ROLE_SERVER;
+
+                // client
+                else if(strncmp(argv[i]+2,"client",6) == 0)
+                    role = ROLE_CLIENT;
+            }
+            else
+            {
+                net_client_set_server_ip(argv[i]);
+            }
+        }
+    }
+}
+
+void start_local()
+{
     LOGI("--------------");
-    LOGI("Starting GUI");
+    LOGI("Starting Local");
     LOGI("--------------");
 
     time_t t;
@@ -44,8 +99,8 @@ int main(int argc, char* argv[])
 
     init();
 
-    timer_set_fps(&main_timer,TARGET_FPS);
-    timer_begin(&main_timer);
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
 
     double curr_time = timer_get_time();
     double new_time  = 0.0;
@@ -74,21 +129,100 @@ int main(int argc, char* argv[])
 
         draw();
 
-        timer_wait_for_frame(&main_timer);
+        timer_wait_for_frame(&game_timer);
         window_swap_buffers();
         window_mouse_update_actions();
     }
 
     deinit();
-    return 0;
+}
+
+void start_client()
+{
+    LOGI("---------------");
+    LOGI("Starting Client");
+    LOGI("---------------");
+
+    time_t t;
+    srand((unsigned) time(&t));
+
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
+
+    net_client_init();
+
+    int client_id = net_client_connect();
+    if(client_id < 0)
+        return;
+
+    LOGN("Client ID: %d", client_id);
+    player = &players[client_id];
+
+    init();
+
+    double curr_time = timer_get_time();
+    double new_time  = 0.0;
+    double accum = 0.0;
+
+    const double dt = 1.0/TARGET_FPS;
+
+    // main game loop
+    for(;;)
+    {
+        new_time = timer_get_time();
+        double frame_time = new_time - curr_time;
+        curr_time = new_time;
+
+        accum += frame_time;
+
+        window_poll_events();
+        if(window_should_close())
+            break;
+
+        if(!net_client_is_connected())
+            break;
+
+        while(accum >= dt)
+        {
+            simulate_client(dt); // client-side prediction
+            net_client_update();
+            accum -= dt;
+        }
+
+        draw();
+
+        timer_wait_for_frame(&game_timer);
+        window_swap_buffers();
+        window_mouse_update_actions();
+    }
+
+    net_client_disconnect();
+    deinit();
+}
+
+void start_server()
+{
+    LOGI("---------------");
+    LOGI("Starting Server");
+    LOGI("---------------");
+
+    time_t t;
+    srand((unsigned) time(&t));
+
+    view_width = VIEW_WIDTH;
+    view_height = VIEW_HEIGHT;
+
+    // server init
+    //gfx_image_init(); // todo
+    player_init();
+    //projectile_init();
+
+    net_server_start();
 }
 
 void init()
 {
-    init_timer();
-    log_init(0);
-
-    LOGI("resolution: %d %d",VIEW_WIDTH, VIEW_HEIGHT);
+    LOGI("Resolution: %d %d",VIEW_WIDTH, VIEW_HEIGHT);
     bool success = window_init(VIEW_WIDTH, VIEW_HEIGHT);
 
     if(!success)
@@ -110,8 +244,6 @@ void init()
 
     LOGI(" - Projectile.");
     projectile_init();
-
-    //imgui_load_theme("nord_deep.theme");
 }
 
 void deinit()
@@ -122,8 +254,14 @@ void deinit()
 
 void simulate(double dt)
 {
-    player_update(&players[0], dt);
     projectile_update(dt);
+    player_update(player, dt);
+}
+
+void simulate_client(double dt)
+{
+    projectile_update(dt);
+    player_update(player,dt);
 }
 
 static char lines[100][100+1] = {0};
@@ -160,29 +298,4 @@ void draw()
             imgui_theme_editor();
         imgui_end();
     }
-
-    /*
-    static char command[100] = {0};
-    imgui_begin_panel("Command Runner", 500, 10);
-        imgui_theme_selector();
-        imgui_text_sized(24,"Command Runner");
-        imgui_horizontal_line();
-        imgui_horizontal_begin();
-
-            imgui_text_box("Command",command,IM_ARRAYSIZE(command));
-            if(imgui_button("Run"))
-            {
-                line_count = command_runner(command, lines);
-            }
-
-        imgui_horizontal_end();
-
-        imgui_text_sized(16, "Output");
-        for(int i = 0; i < line_count; ++i)
-        {
-            imgui_text("%03d: %s",i, lines[i]);
-        }
-
-    imgui_end();
-    */
 }
