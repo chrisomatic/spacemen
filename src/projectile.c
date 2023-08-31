@@ -39,7 +39,7 @@ void projectile_add(Player* p, float angle_offset)
     proj.vel.y = speed*sinf(angle);
 
     proj.time = 0.0;
-    proj.ttl  = 10.0;   //TODO
+    proj.ttl  = 5.0;   //TODO
 
     list_add(plist, (void*)&proj);
 }
