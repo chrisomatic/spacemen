@@ -2,7 +2,7 @@
 
 #include "math2d.h"
 
-#define TICK_RATE 20.0f
+#define TICK_RATE 60.0f
 
 #define MAX_CLIENTS 8
 #define MAX_PACKET_DATA_SIZE 1024

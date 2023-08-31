@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include "net.h"
 
 #define MAX_PLAYERS 8
 
@@ -28,17 +29,35 @@ typedef struct
 
 typedef struct
 {
+    Vector2f pos;
+    float angle;
+} PlayerServerState;
+
+typedef struct
+{
     bool active;
 
+    // physics
     Vector2f pos;
     Vector2f vel;
     Rect hit_box;
     Rect hit_box_prior;
+
     float velocity_limit;
     float accel_factor;
     float turn_rate;
     float angle_deg;
+
     PlayerAction actions[PLAYER_ACTION_MAX];
+
+    // networking
+    NetPlayerInput input;
+    NetPlayerInput input_prior;
+
+    // client-side interpolation
+    float lerp_t;
+    PlayerServerState server_state_target;
+    PlayerServerState server_state_prior;
 
     float proj_cooldown;
 } Player;
@@ -47,7 +66,11 @@ extern Player players[MAX_PLAYERS];
 extern Player* player;
 extern int player_count;
 
-void player_init();
+void player_init(Player* p);
 void player_init_other(int index);
 void player_update(Player* p, double delta_t);
 void player_draw(Player* p);
+
+// networking
+void player_handle_net_inputs(Player* p, double delta_t);
+void player_lerp(Player* p, double delta_t);

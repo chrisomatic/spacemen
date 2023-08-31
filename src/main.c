@@ -184,8 +184,8 @@ void start_client()
 
         while(accum >= dt)
         {
-            simulate_client(dt); // client-side prediction
             net_client_update();
+            simulate_client(dt); // client-side prediction
             accum -= dt;
         }
 
@@ -214,8 +214,12 @@ void start_server()
 
     // server init
     //gfx_image_init(); // todo
-    player_init();
-    //projectile_init();
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        player_init(&players[i]);
+    }
+
+    projectile_init();
 
     net_server_start();
 }
@@ -240,7 +244,7 @@ void init()
     gfx_init(VIEW_WIDTH, VIEW_HEIGHT);
 
     LOGI(" - Player.");
-    player_init();
+    player_init(player);
     player_init_other(1);
 
     LOGI(" - Projectile.");
@@ -269,7 +273,17 @@ void simulate(double dt)
 void simulate_client(double dt)
 {
     projectile_update(dt);
-    player_update(player,dt);
+    player_update(player,dt); // client-side prediction
+    player_handle_net_inputs(player, dt);
+
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if(players[i].active && &players[i] != player)
+        {
+            player_lerp(&players[i], dt);
+        }
+    }
+
 }
 
 static char lines[100][100+1] = {0};
@@ -296,11 +310,12 @@ void draw()
 
     // players
     // -----------------------------------------------------------------------
-    for(int i = 0; i < MAX_PLAYERS; ++i)
+    for(int i = 0; i < MAX_CLIENTS; ++i)
     {
-        player_draw(&players[i]);
+        Player* p = &players[i];
+        if(p->active)
+            player_draw(p);
     }
-
 
     if(debug_enabled)
     {

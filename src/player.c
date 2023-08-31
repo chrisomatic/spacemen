@@ -11,19 +11,22 @@ Player* player = &players[0];
 int player_image;
 int player_count = 1;
 
-void player_init()
+void player_init(Player* p)
 {
-    player_image = gfx_load_image("src/img/spaceship.png", false, true, 32, 32);
+    if(role != ROLE_SERVER)
+    {
+        player_image = gfx_load_image("src/img/spaceship.png", false, true, 32, 32);
+    }
 
-    player->active = true;
-    player->pos.x = 100.0;
-    player->pos.y = 100.0;
-    player->vel.x = 0.0;
-    player->vel.y = 0.0;
-    player->angle_deg = 0.0;
-    player->accel_factor = 10.0;
-    player->turn_rate = 5.0;
-    player->velocity_limit = 500.0;
+    p->active = true;
+    p->pos.x = 100.0;
+    p->pos.y = 100.0;
+    p->vel.x = 0.0;
+    p->vel.y = 0.0;
+    p->angle_deg = 0.0;
+    p->accel_factor = 10.0;
+    p->turn_rate = 5.0;
+    p->velocity_limit = 500.0;
 
     player->hit_box.x = player->pos.x;
     player->hit_box.y = player->pos.y;
@@ -194,4 +197,71 @@ void player_draw(Player* p)
 
     gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
     gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+}
+
+void player_handle_net_inputs(Player* p, double delta_t)
+{
+    // handle input
+    memcpy(&p->input_prior, &p->input, sizeof(NetPlayerInput));
+
+    p->input.delta_t = delta_t;
+
+    p->input.keys = 0;
+
+    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+    {
+        if(p->actions[i].state)
+        {
+            p->input.keys |= (1<<i);
+        }
+    }
+
+    if(p->input.keys != 0x0 && p->input.keys != p->input_prior.keys)
+    {
+        net_client_add_player_input(&p->input);
+
+        /*
+        if(net_client_get_input_count() >= 3) // @HARDCODED 3
+        {
+            // add position, angle to predicted player state
+            PlayerNetState* state = &p->predicted_states[p->predicted_state_index];
+
+            // circular buffer
+            if(p->predicted_state_index == MAX_CLIENT_PREDICTED_STATES -1)
+            {
+                // shift
+                for(int i = 1; i <= MAX_CLIENT_PREDICTED_STATES -1; ++i)
+                {
+                    memcpy(&p->predicted_states[i-1],&p->predicted_states[i],sizeof(PlayerNetState));
+                }
+            }
+            else if(p->predicted_state_index < MAX_CLIENT_PREDICTED_STATES -1)
+            {
+                p->predicted_state_index++;
+            }
+
+            state->associated_packet_id = net_client_get_latest_local_packet_id();
+            state->pos.x = p->pos.x;
+            state->pos.y = p->pos.y;
+            state->angle = p->angle;
+        }
+        */
+    }
+}
+
+void player_lerp(Player* p, double delta_t)
+{
+    if(!p->active) return;
+
+    p->lerp_t += delta_t;
+
+    float tick_time = 1.0/TICK_RATE;
+    float t = (p->lerp_t / tick_time);
+
+    Vector2f lp = lerp2f(&p->server_state_prior.pos,&p->server_state_target.pos,t);
+    p->pos.x = lp.x;
+    p->pos.y = lp.y;
+
+    p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
+
 }

@@ -87,7 +87,6 @@ void projectile_update(float delta_t)
         memcpy(&proj->hit_box_prior, &proj->hit_box, sizeof(Rect));
         proj->hit_box.x = proj->pos.x;
         proj->hit_box.y = proj->pos.y;
-
     }
 
     // int count = 0;

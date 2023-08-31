@@ -72,7 +72,7 @@ struct
 //static PlayerNetState net_player_states[MAX_CLIENTS];
 static NetPlayerInput net_player_inputs[INPUT_QUEUE_MAX]; // shared
 static int input_count = 0;
-static int inputs_per_packet = (TARGET_FPS/TICK_RATE);
+static int inputs_per_packet = 1; //(TARGET_FPS/TICK_RATE);
 
 static uint64_t rand64(void)
 {
@@ -325,7 +325,7 @@ static void update_server_num_clients()
 
 static void remove_client(ClientInfo* cli)
 {
-    LOGN("Remove client");
+    LOGN("Remove client.");
     cli->state = DISCONNECTED;
     cli->remote_latest_packet_id = 0;
     players[cli->client_id].active = false;
@@ -433,7 +433,6 @@ static void server_send(PacketType type, ClientInfo* cli)
 
 static void server_update_players()
 {
-    //LOGN("got input: keys %X, angle %f, delta_t %f", inputs[i].keys, inputs[i].angle, inputs[i].delta_t);
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
@@ -593,7 +592,10 @@ int net_server_start()
                     } break;
                     case PACKET_TYPE_INPUT:
                     {
+
                         uint8_t _input_count = recv_pkt.data[8];
+
+                        LOGN("Received %d inputs from client %d.",_input_count, cli->client_id);
 
                         for(int i = 0; i < _input_count; ++i)
                         {
@@ -1076,7 +1078,6 @@ void net_client_update()
                         }
                         else
                         {
-                            /*
                             p->server_state_prior.pos.x = p->pos.x;
                             p->server_state_prior.pos.y = p->pos.y;
 
@@ -1087,7 +1088,6 @@ void net_client_update()
 
                             p->server_state_prior.angle = p->angle_deg;
                             p->server_state_target.angle = angle;
-                            */
                         }
                     }
 
