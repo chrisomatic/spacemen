@@ -241,6 +241,7 @@ void init()
 
     LOGI(" - Player.");
     player_init();
+    player_init_other(1);
 
     LOGI(" - Projectile.");
     projectile_init();
@@ -254,8 +255,15 @@ void deinit()
 
 void simulate(double dt)
 {
-    projectile_update(dt);
-    player_update(player, dt);
+    if(!paused) projectile_update(dt);
+
+    // player_update(player, dt);
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        player_update(&players[i], dt);
+    }
+
+    if(!paused) projectile_handle_collisions(dt);
 }
 
 void simulate_client(double dt)
@@ -286,7 +294,12 @@ void draw()
         projectile_draw(&projectiles[i]);
     }
 
-    player_draw();
+    // players
+    // -----------------------------------------------------------------------
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        player_draw(&players[i]);
+    }
 
 
     if(debug_enabled)

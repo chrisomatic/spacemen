@@ -13,6 +13,7 @@ enum PlayerActions
     PLAYER_ACTION_SHOOT,
     PLAYER_ACTION_SHIELD,
     PLAYER_ACTION_DEBUG,
+    PLAYER_ACTION_PAUSE,
     PLAYER_ACTION_RESET,
     PLAYER_ACTION_MAX
 };
@@ -31,6 +32,8 @@ typedef struct
 
     Vector2f pos;
     Vector2f vel;
+    Rect hit_box;
+    Rect hit_box_prior;
     float velocity_limit;
     float accel_factor;
     float turn_rate;
@@ -45,5 +48,6 @@ extern Player* player;
 extern int player_count;
 
 void player_init();
+void player_init_other(int index);
 void player_update(Player* p, double delta_t);
-void player_draw();
+void player_draw(Player* p);

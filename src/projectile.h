@@ -11,6 +11,11 @@ typedef struct
     Vector2f vel;
     float angle_deg;
 
+    Rect hit_box;
+    Rect hit_box_prior;
+
+    Player* shooter;
+
     float time;
     float ttl;
     bool dead;
@@ -21,6 +26,6 @@ extern glist* plist;
 
 void projectile_init();
 void projectile_add(Player* p, float angle_offset);
-
 void projectile_update(float delta_t);
+void projectile_handle_collisions(float delta_t);
 void projectile_draw(Projectile* proj);

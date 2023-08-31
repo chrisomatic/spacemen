@@ -25,6 +25,14 @@ void player_init()
     player->turn_rate = 5.0;
     player->velocity_limit = 500.0;
 
+    player->hit_box.x = player->pos.x;
+    player->hit_box.y = player->pos.y;
+    GFXImage* img = &gfx_images[player_image];
+    float wh = MAX(img->element_width, img->element_height);
+    player->hit_box.w = wh;
+    player->hit_box.h = wh;
+    memcpy(&player->hit_box_prior, &player->hit_box, sizeof(Rect));
+
     window_controls_add_key(&player->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_W);
     window_controls_add_key(&player->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_S);
     window_controls_add_key(&player->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
@@ -33,15 +41,43 @@ void player_init()
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_J);
     window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
     window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
+}
+
+void player_init_other(int index)
+{
+    if(index == 0 || index >= MAX_PLAYERS) return;
+
+    Player* p = &players[index];
+    p->active = true;
+    p->pos.x = 200.0;
+    p->pos.y = 100.0;
+    p->vel.x = 0.0;
+    p->vel.y = 0.0;
+    p->angle_deg = 0.0;
+    p->accel_factor = 10.0;
+    p->turn_rate = 5.0;
+    p->velocity_limit = 500.0;
+
+    p->hit_box.x = p->pos.x;
+    p->hit_box.y = p->pos.y;
+    GFXImage* img = &gfx_images[player_image];
+    float wh = MAX(img->element_width, img->element_height);
+    p->hit_box.w = wh;
+    p->hit_box.h = wh;
+    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
+
+    player_count++;
 }
 
 void player_update(Player* p, double delta_t)
 {
+    if(!p->active) return;
     // printf("player update\n");
 
     for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
     {
-        PlayerAction* pa = &player->actions[i];
+        PlayerAction* pa = &p->actions[i];
         if(pa->state && !pa->prior_state)
         {
             pa->toggled_on = true;
@@ -63,85 +99,99 @@ void player_update(Player* p, double delta_t)
         pa->prior_state = pa->state;
     }
 
-    if(player->actions[PLAYER_ACTION_DEBUG].toggled_on)
+    if(p->actions[PLAYER_ACTION_DEBUG].toggled_on)
         debug_enabled = !debug_enabled;
 
-    bool fwd   = player->actions[PLAYER_ACTION_FORWARD].state;
-    bool bkwd  = player->actions[PLAYER_ACTION_BACKWARD].state;
-    bool left  = player->actions[PLAYER_ACTION_LEFT].state;
-    bool right = player->actions[PLAYER_ACTION_RIGHT].state;
+    if(p->actions[PLAYER_ACTION_PAUSE].toggled_on)
+        paused = !paused;
+
+    if(paused) return;
+
+    bool fwd   = p->actions[PLAYER_ACTION_FORWARD].state;
+    bool bkwd  = p->actions[PLAYER_ACTION_BACKWARD].state;
+    bool left  = p->actions[PLAYER_ACTION_LEFT].state;
+    bool right = p->actions[PLAYER_ACTION_RIGHT].state;
 
     if(fwd || bkwd)
     {
-        float angle = RAD(player->angle_deg);
+        float angle = RAD(p->angle_deg);
 
         if(fwd)
         {
-            player->vel.x += player->accel_factor*cos(angle);
-            player->vel.y -= player->accel_factor*sin(angle);
+            p->vel.x += p->accel_factor*cos(angle);
+            p->vel.y -= p->accel_factor*sin(angle);
         }
 
         if(bkwd)
         {
-            player->vel.x -= player->accel_factor*cos(angle);
-            player->vel.y += player->accel_factor*sin(angle);
+            p->vel.x -= p->accel_factor*cos(angle);
+            p->vel.y += p->accel_factor*sin(angle);
         }
 
-        float D = player->velocity_limit;
-        float mag = magn(player->vel);
+        float D = p->velocity_limit;
+        float mag = magn(p->vel);
 
         if(mag > D)
         {
             // scale vel back to velocity limit
             float factor = D / mag;
 
-            player->vel.y *= factor;
-            player->vel.x *= factor;
+            p->vel.y *= factor;
+            p->vel.x *= factor;
         }
 
     }
 
-    player->pos.x += player->vel.x*delta_t;
-    player->pos.y += player->vel.y*delta_t;
+    p->pos.x += p->vel.x*delta_t;
+    p->pos.y += p->vel.y*delta_t;
 
     if(left)
     {
-        player->angle_deg += player->turn_rate;
+        p->angle_deg += p->turn_rate;
     }
 
     if(right)
     {
-        player->angle_deg -= player->turn_rate;
+        p->angle_deg -= p->turn_rate;
     }
 
-    if(player->actions[PLAYER_ACTION_RESET].toggled_on)
+    if(p->actions[PLAYER_ACTION_RESET].toggled_on)
     {
-        player->pos.x = VIEW_WIDTH/2.0;
-        player->pos.y = VIEW_HEIGHT/2.0;
-        player->vel.x = 0.0;
-        player->vel.y = 0.0;
+        p->pos.x = VIEW_WIDTH/2.0;
+        p->pos.y = VIEW_HEIGHT/2.0;
+        p->vel.x = 0.0;
+        p->vel.y = 0.0;
     }
 
-    const float pcooldown = 0;//0.0168; //seconds
-    if(player->actions[PLAYER_ACTION_SHOOT].toggled_on)
+    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
+
+    p->hit_box.x = p->pos.x;
+    p->hit_box.y = p->pos.y;
+
+    const float pcooldown = 0.1; //seconds
+    if(p->actions[PLAYER_ACTION_SHOOT].toggled_on)
     {
         projectile_add(player, 0);
-        player->proj_cooldown = pcooldown;
+        p->proj_cooldown = pcooldown;
     }
-    else if(player->actions[PLAYER_ACTION_SHOOT].state)
+    else if(p->actions[PLAYER_ACTION_SHOOT].state)
     {
-        player->proj_cooldown -= delta_t;
-        if(player->proj_cooldown <= 0.0)
+        p->proj_cooldown -= delta_t;
+        if(p->proj_cooldown <= 0.0)
         {
             projectile_add(player, 0);
-            player->proj_cooldown = pcooldown;
+            p->proj_cooldown = pcooldown;
         }
 
     }
 
 }
 
-void player_draw()
+void player_draw(Player* p)
 {
-    gfx_draw_image(player_image, 0, player->pos.x,player->pos.y, COLOR_TINT_NONE, 1.0, player->angle_deg, 1.0, true, true);
+    if(!p->active) return;
+    gfx_draw_image(player_image, 0, p->pos.x,p->pos.y, COLOR_TINT_NONE, 1.0, p->angle_deg, 1.0, true, true);
+
+    gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
+    gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
 }
