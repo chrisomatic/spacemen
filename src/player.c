@@ -37,6 +37,8 @@ void player_init()
 
 void player_update(Player* p, double delta_t)
 {
+    // printf("player update\n");
+
     for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
     {
         PlayerAction* pa = &player->actions[i];
@@ -120,7 +122,7 @@ void player_update(Player* p, double delta_t)
         player->vel.y = 0.0;
     }
 
-    const float pcooldown = 0.0; //seconds
+    const float pcooldown = 0;//0.0168; //seconds
     if(player->actions[PLAYER_ACTION_SHOOT].toggled_on)
     {
         projectile_add(player, 0);

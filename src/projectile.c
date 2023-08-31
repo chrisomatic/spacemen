@@ -41,12 +41,15 @@ void projectile_add(Player* p, float angle_offset)
     proj.time = 0.0;
     proj.ttl  = 5.0;   //TODO
 
+    // for(int i = 0; i < 100; ++i)
     list_add(plist, (void*)&proj);
 }
 
 
 void projectile_update(float delta_t)
 {
+    // printf("projectile update\n");
+
     for(int i = plist->count - 1; i >= 0; --i)
     {
         Projectile* proj = &projectiles[i];
@@ -60,22 +63,26 @@ void projectile_update(float delta_t)
             continue;
         }
 
-        delta_t = RANGE(delta_t, 0.0, proj->ttl - proj->time);
+        float _dt = RANGE(proj->ttl - proj->time, 0.0, delta_t);
+        // printf("%3d %.4f\n", i, delta_t);
 
-        proj->time += delta_t;
+        proj->time += _dt;
 
-        proj->pos.x += delta_t*proj->vel.x;
-        proj->pos.y -= delta_t*proj->vel.y; // @minus
+        proj->pos.x += _dt*proj->vel.x;
+        proj->pos.y -= _dt*proj->vel.y; // @minus
 
     }
 
+    // int count = 0;
     for(int i = plist->count - 1; i >= 0; --i)
     {
         if(projectiles[i].dead)
         {
+            // count++;
             projectile_remove(i);
         }
     }
+    // if(count > 0) printf("removed %d\n", count);
 
 }
 
