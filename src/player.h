@@ -32,12 +32,6 @@ typedef struct
 
 typedef struct
 {
-    Vector2f pos;
-    float angle;
-} PlayerServerState;
-
-typedef struct
-{
     bool active;
 
     // physics
@@ -62,8 +56,8 @@ typedef struct
 
     // client-side interpolation
     float lerp_t;
-    PlayerServerState server_state_target;
-    PlayerServerState server_state_prior;
+    ObjectState server_state_target;
+    ObjectState server_state_prior;
 
 } Player;
 
@@ -74,6 +68,7 @@ extern int player_count;
 void player_init(Player* p);
 void player_init_other(int index);
 void player_update(Player* p, double delta_t);
+void player_update_hit_box(Player* p);
 void player_draw(Player* p);
 
 // networking

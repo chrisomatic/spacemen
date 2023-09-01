@@ -1,2 +1,2 @@
 #!/bin/sh
-./bin/spacemen --server
+./build.sh && ./bin/spacemen --server

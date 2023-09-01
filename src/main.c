@@ -277,15 +277,21 @@ void simulate(double dt)
 
 void simulate_client(double dt)
 {
-    projectile_update(dt);
-    player_update(player,dt); // client-side prediction
+    //projectile_update(dt);
+    //player_update(player,dt); // client-side prediction
     player_handle_net_inputs(player, dt);
+
+    for(int i = 0; i < plist->count; ++i)
+    {
+        projectile_lerp(&projectiles[i], dt);
+    }
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
-        if(players[i].active && &players[i] != player)
+        if(players[i].active)
         {
             player_lerp(&players[i], dt);
+            player_update_hit_box(&players[i]);
         }
     }
 

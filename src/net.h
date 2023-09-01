@@ -2,7 +2,7 @@
 
 #include "math2d.h"
 
-#define TICK_RATE 60.0f
+#define TICK_RATE 20.0f
 
 #define MAX_CLIENTS 8
 #define MAX_PACKET_DATA_SIZE 1024
@@ -92,6 +92,12 @@ PACK(struct PlayerNetState
 });
 
 typedef struct PlayerNetState PlayerNetState;
+
+typedef struct
+{
+    Vector2f pos;
+    float angle;
+} ObjectState;
 
 extern char* server_ip_address;
 

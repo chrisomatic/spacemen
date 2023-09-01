@@ -107,6 +107,20 @@ void projectile_update(float delta_t)
 
 }
 
+void projectile_lerp(Projectile* p, double delta_t)
+{
+    p->lerp_t += delta_t;
+
+    float tick_time = 1.0/TICK_RATE;
+    float t = (p->lerp_t / tick_time);
+
+    Vector2f lp = lerp2f(&p->server_state_prior.pos,&p->server_state_target.pos,t);
+    p->pos.x = lp.x;
+    p->pos.y = lp.y;
+
+    p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
+}
+
 void projectile_handle_collisions(float delta_t)
 {
     for(int i = plist->count - 1; i >= 0; --i)

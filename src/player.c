@@ -18,6 +18,8 @@ void player_init(Player* p)
         player_image = gfx_load_image("src/img/spaceship.png", false, true, 32, 32);
     }
 
+    memset(p,0, sizeof(Player));
+
     p->active = true;
     p->pos.x = 100.0;
     p->pos.y = 100.0;
@@ -53,6 +55,8 @@ void player_init_other(int index)
     if(index == 0 || index >= MAX_PLAYERS) return;
 
     Player* p = &players[index];
+    memset(p,0, sizeof(Player));
+
     p->active = true;
     p->pos.x = 200.0;
     p->pos.y = 100.0;
@@ -169,16 +173,13 @@ void player_update(Player* p, double delta_t)
         p->energy = MAX_ENERGY;
     }
 
-    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
-
-    p->hit_box.x = p->pos.x;
-    p->hit_box.y = p->pos.y;
+    player_update_hit_box(p);
 
     const float pcooldown = 0.1; //seconds
     if(p->actions[PLAYER_ACTION_SHOOT].toggled_on)
     {
-        projectile_add(player, 0);
         // energy = -5.0;
+        projectile_add(p, 0);
         p->proj_cooldown = pcooldown;
     }
     else if(p->actions[PLAYER_ACTION_SHOOT].state)
@@ -196,6 +197,15 @@ void player_update(Player* p, double delta_t)
     p->energy = RANGE(p->energy + energy, 0.0, MAX_ENERGY);
 
     // printf("energy: %.2f\n", p->energy);
+
+}
+
+void player_update_hit_box(Player* p)
+{
+    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
+
+    p->hit_box.x = p->pos.x;
+    p->hit_box.y = p->pos.y;
 
 }
 
@@ -243,36 +253,9 @@ void player_handle_net_inputs(Player* p, double delta_t)
         }
     }
 
-    if(p->input.keys != 0x0 && p->input.keys != p->input_prior.keys)
+    if(p->input.keys != p->input_prior.keys)
     {
         net_client_add_player_input(&p->input);
-
-        /*
-        if(net_client_get_input_count() >= 3) // @HARDCODED 3
-        {
-            // add position, angle to predicted player state
-            PlayerNetState* state = &p->predicted_states[p->predicted_state_index];
-
-            // circular buffer
-            if(p->predicted_state_index == MAX_CLIENT_PREDICTED_STATES -1)
-            {
-                // shift
-                for(int i = 1; i <= MAX_CLIENT_PREDICTED_STATES -1; ++i)
-                {
-                    memcpy(&p->predicted_states[i-1],&p->predicted_states[i],sizeof(PlayerNetState));
-                }
-            }
-            else if(p->predicted_state_index < MAX_CLIENT_PREDICTED_STATES -1)
-            {
-                p->predicted_state_index++;
-            }
-
-            state->associated_packet_id = net_client_get_latest_local_packet_id();
-            state->pos.x = p->pos.x;
-            state->pos.y = p->pos.y;
-            state->angle = p->angle;
-        }
-        */
     }
 }
 

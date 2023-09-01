@@ -6,14 +6,14 @@
 #endif
 
 #include "core/socket.h"
-#include "timer.h"
-#include "net.h"
-#include "window.h"
-#include "log.h"
-
-#include "player.h"
-//#include "projectile.h"
+#include "core/timer.h"
+#include "core/window.h"
+#include "core/log.h"
 #include "core/circbuf.h"
+
+#include "net.h"
+#include "player.h"
+#include "projectile.h"
 
 //#define SERVER_PRINT_SIMPLE 1
 //#define SERVER_PRINT_VERBOSE 1
@@ -72,7 +72,7 @@ struct
 //static PlayerNetState net_player_states[MAX_CLIENTS];
 static NetPlayerInput net_player_inputs[INPUT_QUEUE_MAX]; // shared
 static int input_count = 0;
-static int inputs_per_packet = 1; //(TARGET_FPS/TICK_RATE);
+static int inputs_per_packet = 1.0; //(TARGET_FPS/TICK_RATE);
 
 static uint64_t rand64(void)
 {
@@ -84,6 +84,7 @@ static uint64_t rand64(void)
     return r;
 }
 
+static Timer game_timer = {0};
 static Timer server_timer = {0};
 
 static inline int get_packet_size(Packet* pkt)
@@ -402,6 +403,19 @@ static void server_send(PacketType type, ClientInfo* cli)
             }
 
             pkt.data[0] = num_clients;
+
+            if(plist->count > 0)
+                pkt.data[index++] = plist->count;
+
+            for(int i = 0; i < plist->count; ++i)
+            {
+                memcpy(&pkt.data[index],&projectiles[i].pos,sizeof(Vector2f)); // pos
+                index += sizeof(Vector2f);
+
+                memcpy(&pkt.data[index],&projectiles[i].angle_deg,sizeof(float)); // angle
+                index += sizeof(float);
+            }
+
             pkt.data_len = index;
 
             //print_packet(&pkt);
@@ -433,7 +447,6 @@ static void server_send(PacketType type, ClientInfo* cli)
 
 static void server_update_players()
 {
-
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
         ClientInfo* cli = &server.clients[i];
@@ -444,19 +457,28 @@ static void server_update_players()
 
         //printf("Applying inputs to player. input count: %d\n", cli->input_count);
 
-        for(int i = 0; i < cli->input_count; ++i)
+        if(cli->input_count == 0)
         {
-            // apply input to player
-            for(int j = 0; j < PLAYER_ACTION_MAX; ++j)
+            projectile_update(1.0/TARGET_FPS);
+            player_update(p,1.0/TARGET_FPS);
+        }
+        else
+        {
+            for(int i = 0; i < cli->input_count; ++i)
             {
-                bool key_state = (cli->net_player_inputs[i].keys & ((uint32_t)1<<j)) != 0;
-                p->actions[j].state = key_state;
+                // apply input to player
+                for(int j = 0; j < PLAYER_ACTION_MAX; ++j)
+                {
+                    bool key_state = (cli->net_player_inputs[i].keys & ((uint32_t)1<<j)) != 0;
+                    p->actions[j].state = key_state;
+                }
+
+                projectile_update(cli->net_player_inputs[i].delta_t);
+                player_update(p,cli->net_player_inputs[i].delta_t);
             }
 
-            player_update(p,cli->net_player_inputs[i].delta_t);
+            cli->input_count = 0;
         }
-
-        cli->input_count = 0;
 
         cli->player_state.pos.x = p->pos.x;
         cli->player_state.pos.y = p->pos.y;
@@ -472,8 +494,11 @@ int net_server_start()
 
     int sock;
 
-    // set tick rate
+    // set timers
+    timer_set_fps(&game_timer,TARGET_FPS);
     timer_set_fps(&server_timer,TICK_RATE);
+
+    timer_begin(&game_timer);
     timer_begin(&server_timer);
 
     LOGN("Creating socket.");
@@ -487,9 +512,17 @@ int net_server_start()
 
     double t0=timer_get_time();
     double t1=0.0;
+    double accum = 0.0;
+
+    double t0_g=timer_get_time();
+    double t1_g=0.0;
+    double accum_g = 0.0;
+
+    const double dt = 1.0/TICK_RATE;
 
     for(;;)
     {
+        // handle connections, receive inputs
         for(;;)
         {
             // Read all pending packets
@@ -584,7 +617,6 @@ int net_server_start()
                     case PACKET_TYPE_CONNECT_CHALLENGE_RESP:
                     {
                         cli->state = SENDING_CHALLENGE_RESPONSE;
-                        //cli->player_state.active = true;
                         players[cli->client_id].active = true;
 
                         server_send(PACKET_TYPE_CONNECT_ACCEPTED,cli);
@@ -592,10 +624,7 @@ int net_server_start()
                     } break;
                     case PACKET_TYPE_INPUT:
                     {
-
                         uint8_t _input_count = recv_pkt.data[8];
-
-                        LOGN("Received %d inputs from client %d.",_input_count, cli->client_id);
 
                         for(int i = 0; i < _input_count; ++i)
                         {
@@ -603,23 +632,6 @@ int net_server_start()
                             int index = 9+(i*sizeof(NetPlayerInput));
 
                             memcpy(&cli->net_player_inputs[cli->input_count++], &recv_pkt.data[index],sizeof(NetPlayerInput));
-
-                            /*
-                            NetPlayerInput _input;
-                            memcpy(&_input, &recv_pkt.data[index],sizeof(NetPlayerInput));
-
-                            Player* p = &players[cli->client_id];
-
-                            // apply input
-                            p->keys = _input.keys;
-
-                            player_update(p,_input.delta_t);
-
-                            cli->player_state.pos.x = p->pos.x;
-                            cli->player_state.pos.y = p->pos.y;
-                            cli->player_state.angle = p->angle_deg;
-                            */
-
                         }
                     } break;
                     case PACKET_TYPE_PING:
@@ -635,51 +647,63 @@ int net_server_start()
                 }
             }
 
-            timer_delay_us(1000); // delay 1ms
+            //timer_delay_us(1000); // delay 1ms
         }
 
-        server_update_players();
+        t1_g = timer_get_time();
+        double elapsed_time_g = t1_g - t0_g;
+        t0_g = t1_g;
+
+        accum_g += elapsed_time_g;
+        while(accum_g >= 1.0/TARGET_FPS)
+        {
+            server_update_players();
+            accum_g -= 1.0/TARGET_FPS;
+        }
 
         t1 = timer_get_time();
-        double delta_t = t1-t0;
+        double elapsed_time = t1 - t0;
+        t0 = t1;
 
-        // server simulate
-        //projectile_update(delta_t);
+        accum += elapsed_time;
 
-        // send state packet to all clients
-        if(server.num_clients > 0)
+        if(accum >= dt)
         {
-            // disconnect any client that hasn't sent a packet in DISCONNECTION_TIMEOUT
-            for(int i = 0; i < MAX_CLIENTS; ++i)
+            // send state packet to all clients
+            if(server.num_clients > 0)
             {
-                ClientInfo* cli = &server.clients[i];
-
-                if(cli == NULL) continue;
-                if(cli->state == DISCONNECTED) continue;
-
-                if(cli->time_of_latest_packet > 0)
+                // disconnect any client that hasn't sent a packet in DISCONNECTION_TIMEOUT
+                for(int i = 0; i < MAX_CLIENTS; ++i)
                 {
-                    double time_elapsed = timer_get_time() - cli->time_of_latest_packet;
+                    ClientInfo* cli = &server.clients[i];
 
-                    if(time_elapsed >= DISCONNECTION_TIMEOUT)
+                    if(cli == NULL) continue;
+                    if(cli->state == DISCONNECTED) continue;
+
+                    if(cli->time_of_latest_packet > 0)
                     {
-                        LOGN("Client timed out. Elapsed time: %f", time_elapsed);
+                        double time_elapsed = timer_get_time() - cli->time_of_latest_packet;
 
-                        // disconnect client
-                        server_send(PACKET_TYPE_DISCONNECT,cli);
-                        remove_client(cli);
-                        continue;
+                        if(time_elapsed >= DISCONNECTION_TIMEOUT)
+                        {
+                            LOGN("Client timed out. Elapsed time: %f", time_elapsed);
+
+                            // disconnect client
+                            server_send(PACKET_TYPE_DISCONNECT,cli);
+                            remove_client(cli);
+                            continue;
+                        }
                     }
-                }
 
-                // send world state to connected clients...
-                server_send(PACKET_TYPE_STATE,cli);
+                    // send world state to connected clients...
+                    server_send(PACKET_TYPE_STATE,cli);
+                }
             }
+            accum = 0.0;
         }
 
-        timer_wait_for_frame(&server_timer);
-
-        t0 = t1;
+        // don't wait, just proceed to handling packets
+        //timer_wait_for_frame(&server_timer);
     }
 }
 
@@ -972,10 +996,14 @@ void net_client_update()
                     for(int i = 0; i < MAX_CLIENTS; ++i)
                         players[i].active = false;
 
+                    //LOGN("Received STATE packet. num players: %d", num_players);
+
                     for(int i = 0; i < num_players; ++i)
                     {
                         uint8_t client_id = srvpkt.data[index];
                         index += 1;
+
+                        //LOGN("  %d: Client ID %d", i, client_id);
 
                         if(client_id >= MAX_CLIENTS)
                         {
@@ -991,12 +1019,14 @@ void net_client_update()
                         memcpy(&angle, &srvpkt.data[index],sizeof(float));
                         index += sizeof(float);
 
+                        //LOGN("      Pos: %f, %f. Angle: %f", pos.x, pos.y, angle);
+
                         Player* p = &players[client_id];
                         p->active = true;
 
+#if 0
                         if(p == player)
                         {
-#if 0
                             for(int i = p->predicted_state_index; i >= 0; --i)
                             {
                                 PlayerNetState* pstate = &p->predicted_states[i];
@@ -1074,25 +1104,58 @@ void net_client_update()
                                     break;
                                 }
                             }
-#endif
                         }
                         else
                         {
-                            p->server_state_prior.pos.x = p->pos.x;
-                            p->server_state_prior.pos.y = p->pos.y;
+                        }
+#endif
+                        p->lerp_t = 0.0;
 
-                            p->server_state_target.pos.x = pos.x;
-                            p->server_state_target.pos.y = pos.y;
+                        p->server_state_prior.pos.x = p->pos.x;
+                        p->server_state_prior.pos.y = p->pos.y;
+                        p->server_state_prior.angle = p->angle_deg;
+
+                        p->server_state_target.pos.x = pos.x;
+                        p->server_state_target.pos.y = pos.y;
+                        p->server_state_target.angle = angle;
+                    }
+
+                    if(index < srvpkt.data_len-1)
+                    {
+                        // load projectiles
+                        uint8_t num_projectiles = srvpkt.data[index];
+                        index += 1;
+
+                        list_clear(plist);
+                        plist->count = num_projectiles;
+
+                        for(int i = 0; i < num_projectiles; ++i)
+                        {
+                            Projectile* p = &projectiles[i];
+
+                            Vector2f pos;
+                            float angle;
+
+                            memcpy(&pos, &srvpkt.data[index], sizeof(Vector2f));
+                            index += sizeof(Vector2f);
+
+                            memcpy(&angle, &srvpkt.data[index],sizeof(float));
+                            index += sizeof(float);
 
                             p->lerp_t = 0.0;
 
+                            p->server_state_prior.pos.x = p->pos.x;
+                            p->server_state_prior.pos.y = p->pos.y;
                             p->server_state_prior.angle = p->angle_deg;
+
+                            p->server_state_target.pos.x = pos.x;
+                            p->server_state_target.pos.y = pos.y;
                             p->server_state_target.angle = angle;
                         }
                     }
 
                     client.player_count = num_players;
-                    player_count = client.player_count;
+                    player_count = num_players;
 
                 } break;
                 case PACKET_TYPE_PING:
