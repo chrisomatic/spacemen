@@ -35,6 +35,8 @@ void simulate(double);
 void simulate_client(double);
 void draw();
 
+void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
+
 // =========================
 // Main Loop
 // =========================
@@ -235,6 +237,9 @@ void init()
         exit(1);
     }
 
+    window_controls_set_cb(key_cb);
+    window_controls_set_key_mode(KEY_MODE_NORMAL);
+
     LOGI("Initializing...");
 
     LOGI(" - Shaders.");
@@ -245,7 +250,7 @@ void init()
 
     LOGI(" - Player.");
     player_init(player);
-    player_init_other(1);
+    // player_init_other(1);
 
     LOGI(" - Projectile.");
     projectile_init();
@@ -325,5 +330,27 @@ void draw()
             imgui_color_picker("Window Background Color", &background_color);
             imgui_theme_editor();
         imgui_end();
+    }
+}
+
+void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
+{
+    // printf("key: %d, action: %d\n", key, action);
+    bool ctrl = (mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL;
+
+    KeyMode kmode = window_controls_get_key_mode();
+    if(kmode == KEY_MODE_NORMAL)
+    {
+        if(action == GLFW_PRESS)
+        {
+            // if(key == GLFW_KEY_ESCAPE)
+            // {
+            //     window_enable_cursor();
+            // }
+            if(ctrl && key == GLFW_KEY_C)
+            {
+                window_set_close(1);
+            }
+        }
     }
 }

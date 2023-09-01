@@ -65,8 +65,8 @@ bool window_init(int _view_width, int _view_height)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
     // printf("vw: %d, vh: %d\n", view_width, view_height);
-    // window = glfwCreateWindow(view_width,view_height,"Postmortem",glfwGetPrimaryMonitor(),NULL);
-    window = glfwCreateWindow(view_width,view_height,"Postmortem",NULL,NULL);
+    // window = glfwCreateWindow(view_width,view_height,"Spacemen",glfwGetPrimaryMonitor(),NULL);
+    window = glfwCreateWindow(view_width,view_height,"Spacemen",NULL,NULL);
 
     if(window == NULL)
     {
@@ -88,7 +88,7 @@ bool window_init(int _view_width, int _view_height)
 
     cursor_ibeam = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
 
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(0); // vsync
@@ -115,7 +115,6 @@ bool window_init(int _view_width, int _view_height)
     //     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
     //     printf("Monitor refresh rate: %d (%s)\n", mode->refreshRate, glfwGetMonitorName(monitor));
     // }
-
 
     return true;
 }

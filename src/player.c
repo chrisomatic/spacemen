@@ -27,11 +27,12 @@ void player_init(Player* p)
     p->accel_factor = 10.0;
     p->turn_rate = 5.0;
     p->velocity_limit = 500.0;
+    p->energy = MAX_ENERGY/2.0;
 
     player->hit_box.x = player->pos.x;
     player->hit_box.y = player->pos.y;
     GFXImage* img = &gfx_images[player_image];
-    float wh = MAX(img->element_width, img->element_height);
+    float wh = MAX(img->element_width, img->element_height)*0.9;
     player->hit_box.w = wh;
     player->hit_box.h = wh;
     memcpy(&player->hit_box_prior, &player->hit_box, sizeof(Rect));
@@ -61,6 +62,7 @@ void player_init_other(int index)
     p->accel_factor = 10.0;
     p->turn_rate = 5.0;
     p->velocity_limit = 500.0;
+    p->energy = MAX_ENERGY;
 
     p->hit_box.x = p->pos.x;
     p->hit_box.y = p->pos.y;
@@ -115,7 +117,7 @@ void player_update(Player* p, double delta_t)
     bool left  = p->actions[PLAYER_ACTION_LEFT].state;
     bool right = p->actions[PLAYER_ACTION_RIGHT].state;
 
-    if(fwd || bkwd)
+    if(fwd)
     {
         float angle = RAD(p->angle_deg);
 
@@ -123,12 +125,6 @@ void player_update(Player* p, double delta_t)
         {
             p->vel.x += p->accel_factor*cos(angle);
             p->vel.y -= p->accel_factor*sin(angle);
-        }
-
-        if(bkwd)
-        {
-            p->vel.x -= p->accel_factor*cos(angle);
-            p->vel.y += p->accel_factor*sin(angle);
         }
 
         float D = p->velocity_limit;
@@ -143,6 +139,12 @@ void player_update(Player* p, double delta_t)
             p->vel.x *= factor;
         }
 
+    }
+
+    if(bkwd)
+    {
+        p->vel.x *= (55 * delta_t);
+        p->vel.y *= (55 * delta_t);
     }
 
     p->pos.x += p->vel.x*delta_t;
@@ -164,6 +166,7 @@ void player_update(Player* p, double delta_t)
         p->pos.y = VIEW_HEIGHT/2.0;
         p->vel.x = 0.0;
         p->vel.y = 0.0;
+        p->energy = MAX_ENERGY;
     }
 
     memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
@@ -175,6 +178,7 @@ void player_update(Player* p, double delta_t)
     if(p->actions[PLAYER_ACTION_SHOOT].toggled_on)
     {
         projectile_add(player, 0);
+        // energy = -5.0;
         p->proj_cooldown = pcooldown;
     }
     else if(p->actions[PLAYER_ACTION_SHOOT].state)
@@ -183,10 +187,15 @@ void player_update(Player* p, double delta_t)
         if(p->proj_cooldown <= 0.0)
         {
             projectile_add(player, 0);
+            // energy = -5.0;
             p->proj_cooldown = pcooldown;
         }
-
     }
+
+    float energy = 6.0*delta_t;    //0.2
+    p->energy = RANGE(p->energy + energy, 0.0, MAX_ENERGY);
+
+    // printf("energy: %.2f\n", p->energy);
 
 }
 
@@ -197,6 +206,24 @@ void player_draw(Player* p)
 
     gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
     gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+
+
+    // draw energy
+    float energy_bar_width  = view_width/2.0;
+    float red_width = energy_bar_width*(p->energy/MAX_ENERGY);
+    float energy_bar_height = 15.0;
+    float energy_bar_padding = 4.0;
+
+    float energy_bar_x = (view_width)/2.0;
+    float energy_bar_y = view_height-energy_bar_height-5.0;
+
+    gfx_draw_rect_xywh(energy_bar_x, energy_bar_y, energy_bar_width, energy_bar_height, COLOR_BLACK,0.0,1.0,0.7,true,false);
+    gfx_draw_rect_xywh(energy_bar_x + red_width/2.0 - energy_bar_width/2.0, energy_bar_y, red_width, energy_bar_height, 0x00CC0000,0.0,1.0,0.4,true,false);
+    gfx_draw_rect_xywh(energy_bar_x, energy_bar_y, energy_bar_width, energy_bar_height, COLOR_BLACK,0.0,1.0,0.7,false,false); // border
+
+    Vector2f l = gfx_draw_string(10.0, view_height-30.0, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->vel.x, p->vel.y);
+    gfx_draw_string(10.0, view_height-30.0+l.y, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->pos.x, p->pos.y);
+
 }
 
 void player_handle_net_inputs(Player* p, double delta_t)

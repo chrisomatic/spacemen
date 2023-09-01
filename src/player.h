@@ -5,6 +5,9 @@
 
 #define MAX_PLAYERS 8
 
+#define MAX_ENERGY  300
+
+
 enum PlayerActions
 {
     PLAYER_ACTION_FORWARD,
@@ -48,6 +51,9 @@ typedef struct
     float turn_rate;
     float angle_deg;
 
+    float proj_cooldown;
+    float energy;
+
     PlayerAction actions[PLAYER_ACTION_MAX];
 
     // networking
@@ -59,7 +65,6 @@ typedef struct
     PlayerServerState server_state_target;
     PlayerServerState server_state_prior;
 
-    float proj_cooldown;
 } Player;
 
 extern Player players[MAX_PLAYERS];

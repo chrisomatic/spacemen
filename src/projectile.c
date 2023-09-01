@@ -28,6 +28,11 @@ void projectile_add(Player* p, float angle_offset)
 {
     Projectile proj = {0};
 
+    float energy_usage = 10.0;
+    if(p->energy < energy_usage) return;
+
+    p->energy = RANGE(p->energy - energy_usage,0.0,MAX_ENERGY);
+
     proj.shooter = p;
 
     proj.dead = false;
@@ -36,12 +41,12 @@ void projectile_add(Player* p, float angle_offset)
     proj.pos.x = p->pos.x;
     proj.pos.y = p->pos.y;
     float angle = RAD(proj.angle_deg);
-    float speed = 100.0;
-    proj.vel.x = (speed)*cosf(angle);// + p->vel.x;
-    proj.vel.y = (speed)*sinf(angle);// - p->vel.y;
+    float speed = 400.0;
+    proj.vel.x = (speed)*cosf(angle) + p->vel.x;
+    proj.vel.y = (speed)*sinf(angle) - p->vel.y;
 
     proj.time = 0.0;
-    proj.ttl  = 5.0;   //TODO
+    proj.ttl  = 5.0;
 
     proj.hit_box.x = proj.pos.x;
     proj.hit_box.y = proj.pos.y;
