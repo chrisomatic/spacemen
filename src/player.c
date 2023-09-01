@@ -187,7 +187,7 @@ void player_update(Player* p, double delta_t)
         p->proj_cooldown -= delta_t;
         if(p->proj_cooldown <= 0.0)
         {
-            projectile_add(player, 0);
+            projectile_add(p, 0);
             // energy = -5.0;
             p->proj_cooldown = pcooldown;
         }

@@ -3,7 +3,7 @@
 #include "player.h"
 #include "glist.h"
 
-#define MAX_PROJECTILES 1024
+#define MAX_PROJECTILES 256
 
 typedef struct
 {

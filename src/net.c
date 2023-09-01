@@ -457,9 +457,10 @@ static void server_update_players()
 
         //printf("Applying inputs to player. input count: %d\n", cli->input_count);
 
+        projectile_update(1.0/TARGET_FPS);
+
         if(cli->input_count == 0)
         {
-            projectile_update(1.0/TARGET_FPS);
             player_update(p,1.0/TARGET_FPS);
         }
         else
@@ -473,7 +474,6 @@ static void server_update_players()
                     p->actions[j].state = key_state;
                 }
 
-                projectile_update(cli->net_player_inputs[i].delta_t);
                 player_update(p,cli->net_player_inputs[i].delta_t);
             }
 
