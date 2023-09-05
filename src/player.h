@@ -64,9 +64,10 @@ typedef struct
 extern Player players[MAX_PLAYERS];
 extern Player* player;
 extern int player_count;
+extern int player_image;
 
 void player_init(Player* p);
-void player_init_other(int index);
+void player_init_local();
 void player_update(Player* p, double delta_t);
 void player_update_hit_box(Player* p);
 void player_draw(Player* p);

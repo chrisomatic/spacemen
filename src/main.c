@@ -125,8 +125,23 @@ void parse_args(int argc, char* argv[])
     }
 }
 
+typedef struct
+{
+    bool up;
+    bool down;
+    bool enter;
+} MenuKeys;
+
+MenuKeys menu_keys_prior = {0};
+MenuKeys menu_keys = {0};
+
 void start_menu()
 {
+    window_controls_clear_keys();
+    window_controls_add_key(&menu_keys.up,    GLFW_KEY_W);
+    window_controls_add_key(&menu_keys.down,  GLFW_KEY_S);
+    window_controls_add_key(&menu_keys.enter, GLFW_KEY_ENTER);
+
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
 
@@ -185,6 +200,8 @@ void start()
     {
         player = &players[0];
     }
+
+    player_init_local();
 
     double curr_time = timer_get_time();
     double new_time  = 0.0;
@@ -253,6 +270,11 @@ void init_server()
     view_width = VIEW_WIDTH;
     view_height = VIEW_HEIGHT;
 
+    world_box.w = view_width;
+    world_box.h = view_height;
+    world_box.x = view_width/2.0;
+    world_box.y = view_height/2.0;
+
     //gfx_image_init(); // todo
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
@@ -292,9 +314,11 @@ void init()
     world_box.x = view_width/2.0;
     world_box.y = view_height/2.0;
 
-    LOGI(" - Player.");
-    player_init(player);
-    // player_init_other(1);
+    LOGI(" - Players.");
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        player_init(&players[i]);
+    }
 
     LOGI(" - Projectile.");
     projectile_init();
@@ -343,10 +367,38 @@ void simulate_client(double dt)
 
 }
 
-static uint32_t background_color = 0x00303030;
+uint32_t background_color = 0x00303030;
+int menu_selected_option = 0;
 
 void draw_menu()
 {
+    if(!menu_keys_prior.down && menu_keys.down)
+    {
+        menu_selected_option++;
+        if(menu_selected_option > 4) menu_selected_option = 0;
+    }
+
+    if(!menu_keys_prior.up && menu_keys.up)
+    {
+        menu_selected_option--;
+        if(menu_selected_option < 0) menu_selected_option = 4;
+    }
+
+    if(!menu_keys_prior.enter && menu_keys.enter)
+    {
+        switch(menu_selected_option)
+        {
+            case 0: role = ROLE_LOCAL; return;
+            case 1: role = ROLE_CLIENT; net_client_set_server_ip("127.0.0.1"); return;
+            case 2: role = ROLE_CLIENT; net_client_set_server_ip("66.228.36.123"); return;
+            case 3: role = ROLE_SERVER; return;
+            case 4: exit(0);
+            default: break;
+        }
+    }
+
+    memcpy(&menu_keys_prior, &menu_keys, sizeof(MenuKeys));
+
     uint8_t r = background_color >> 16;
     uint8_t g = background_color >> 8;
     uint8_t b = background_color >> 0;
@@ -355,7 +407,6 @@ void draw_menu()
 
     for(int i = 0; i < 1000; ++i)
     {
-
         int rx = rand() % view_width;
         int ry = rand() % view_height;
         int s = (rand() % 5) + 1;
@@ -372,6 +423,20 @@ void draw_menu()
 
     gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR(tr,tg,tb), title_scale, 0.0, 1.0, true, true, "SPACEMEN");
 
+    int x = (view_width-200)/2.0;
+    int y = (view_height+100)/2.0;
+
+    float menu_item_scale = 0.4;
+
+    gfx_draw_string(x,y, menu_selected_option == 0 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Play Local"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 1 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Join Local Server"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 2 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Join Public Server"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 3 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Host Server"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 4 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Exit"); y += 32;
+
+    gfx_draw_image(player_image, 0, x - 34,(view_height+100)/2.0 + (32*menu_selected_option) + 16, COLOR_TINT_NONE, 1.0, 0.0, 1.0, true, true);
+
+    /*
     imgui_begin_panel("Options",(view_width-200)/2.0,(view_height+100)/2.0, false);
         if(imgui_button("Play Local"))
         {
@@ -396,6 +461,7 @@ void draw_menu()
             exit(0);
         }
     imgui_end();
+    */
 }
 
 void draw()

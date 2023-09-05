@@ -469,7 +469,7 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 WindowKey* wk = &window_keys[i];
                 if(key == wk->key)
                 {
-                    if(action == GLFW_PRESS)
+                    if(action == GLFW_PRESS || action == GLFW_REPEAT)
                         (*wk->state) = true;
                     else
                         (*wk->state) = false;

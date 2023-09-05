@@ -8,20 +8,34 @@
 Player players[MAX_PLAYERS] = {0};
 Player* player = &players[0];
 
-int player_image;
+int player_image = -1;
 int player_count = 1;
+
+void player_init_local()
+{
+    window_controls_add_key(&player->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_W);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_S);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_J);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
+
+    player->active = true;
+}
 
 void player_init(Player* p)
 {
-    if(role != ROLE_SERVER)
-    {
-        // if(player_image != -1)
-        player_image = gfx_load_image("src/img/spaceship.png", false, true, 32, 32);
-    }
+    //if(role != ROLE_SERVER)
+    //{
+        if(player_image == -1)
+            player_image = gfx_load_image("src/img/spaceship.png", false, true, 32, 32);
+    //}
 
     memset(p,0, sizeof(Player));
 
-    p->active = true;
     p->pos.x = 100.0;
     p->pos.y = 100.0;
     p->vel.x = 0.0;
@@ -39,48 +53,11 @@ void player_init(Player* p)
     p->hit_box.w = wh;
     p->hit_box.h = wh;
     memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
-
-    // if(p == player)
-    // {
-        window_controls_add_key(&player->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_W);
-        window_controls_add_key(&player->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_S);
-        window_controls_add_key(&player->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
-        window_controls_add_key(&player->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
-        window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
-        window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_J);
-        window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
-        window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
-        window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
-    // }
 }
 
-void player_init_other(int index)
+void player_activate(Player* p)
 {
-    if(index == 0 || index >= MAX_PLAYERS) return;
-
-    Player* p = &players[index];
-    memset(p,0, sizeof(Player));
-
     p->active = true;
-    p->pos.x = 200.0;
-    p->pos.y = 100.0;
-    p->vel.x = 0.0;
-    p->vel.y = 0.0;
-    p->angle_deg = 0.0;
-    p->accel_factor = 10.0;
-    p->turn_rate = 5.0;
-    p->velocity_limit = 500.0;
-    p->energy = MAX_ENERGY;
-
-    p->hit_box.x = p->pos.x;
-    p->hit_box.y = p->pos.y;
-    GFXImage* img = &gfx_images[player_image];
-    float wh = MAX(img->element_width, img->element_height);
-    p->hit_box.w = wh;
-    p->hit_box.h = wh;
-    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
-
-    player_count++;
 }
 
 void player_update(Player* p, double delta_t)
