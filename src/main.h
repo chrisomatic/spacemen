@@ -41,21 +41,10 @@ typedef enum
 #define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
 
 extern bool paused;
+extern bool debug_enabled;
 extern Timer game_timer;
 extern GameRole role;
-extern Vector2f aim_camera_offset;
-extern Vector2f recoil_camera_offset;
+extern Rect world_box;
 
-extern bool debug_enabled;
-
-const char* game_role_to_str(GameRole _role);
-
-char* string_split_index(char* str, const char* delim, int index, int* ret_len, bool split_past_index);
-char* string_split_index_copy(char* str, const char* delim, int index, bool split_past_index);
-
-void handle_backspace_timer();
-
-Rect calc_sub_box(Rect* rect, float wscale, float hscale, int location);
-
-int player_angle_sector(float angle_deg);
-Vector2f player_angle_sector_range(int sector);
+bool is_in_world(Rect* r);
+Vector2f limit_rect_pos(Rect* limit, Rect* rect);

@@ -173,7 +173,12 @@ void player_update(Player* p, double delta_t)
         p->energy = MAX_ENERGY;
     }
 
+
     player_update_hit_box(p);
+
+    Vector2f adj = limit_rect_pos(&world_box, &p->hit_box);
+    p->pos.x += adj.x;
+    p->pos.y += adj.y;
 
     const float pcooldown = 0.1; //seconds
     if(p->actions[PLAYER_ACTION_SHOOT].toggled_on)
@@ -217,22 +222,26 @@ void player_draw(Player* p)
     gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
     gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
 
+    if(p == player)
+    {
 
-    // draw energy
-    float energy_bar_width  = view_width/2.0;
-    float red_width = energy_bar_width*(p->energy/MAX_ENERGY);
-    float energy_bar_height = 15.0;
-    float energy_bar_padding = 4.0;
+        // draw energy
+        float energy_bar_width  = view_width/2.0;
+        float red_width = energy_bar_width*(p->energy/MAX_ENERGY);
+        float energy_bar_height = 15.0;
+        float energy_bar_padding = 4.0;
 
-    float energy_bar_x = (view_width)/2.0;
-    float energy_bar_y = view_height-energy_bar_height-5.0;
+        float energy_bar_x = (view_width)/2.0;
+        float energy_bar_y = view_height-energy_bar_height-5.0;
 
-    gfx_draw_rect_xywh(energy_bar_x, energy_bar_y, energy_bar_width, energy_bar_height, COLOR_BLACK,0.0,1.0,0.7,true,false);
-    gfx_draw_rect_xywh(energy_bar_x + red_width/2.0 - energy_bar_width/2.0, energy_bar_y, red_width, energy_bar_height, 0x00CC0000,0.0,1.0,0.4,true,false);
-    gfx_draw_rect_xywh(energy_bar_x, energy_bar_y, energy_bar_width, energy_bar_height, COLOR_BLACK,0.0,1.0,0.7,false,false); // border
+        gfx_draw_rect_xywh(energy_bar_x, energy_bar_y, energy_bar_width, energy_bar_height, COLOR_BLACK,0.0,1.0,0.7,true,false);
+        gfx_draw_rect_xywh(energy_bar_x + red_width/2.0 - energy_bar_width/2.0, energy_bar_y, red_width, energy_bar_height, 0x00CC0000,0.0,1.0,0.4,true,false);
+        gfx_draw_rect_xywh(energy_bar_x, energy_bar_y, energy_bar_width, energy_bar_height, COLOR_BLACK,0.0,1.0,0.7,false,false); // border
 
-    Vector2f l = gfx_draw_string(10.0, view_height-30.0, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->vel.x, p->vel.y);
-    gfx_draw_string(10.0, view_height-30.0+l.y, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->pos.x, p->pos.y);
+
+        Vector2f l = gfx_draw_string(10.0, view_height-30.0, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->vel.x, p->vel.y);
+        gfx_draw_string(10.0, view_height-30.0+l.y, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->pos.x, p->pos.y);
+    }
 
 }
 

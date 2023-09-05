@@ -15,11 +15,13 @@
 // Global Vars
 // =========================
 
-GameRole role;
 bool paused = false;
-Timer game_timer = {0};
-
 bool debug_enabled = false;
+Timer game_timer = {0};
+GameRole role;
+Rect world_box = {0};
+
+
 
 // =========================
 // Function Prototypes
@@ -296,6 +298,10 @@ void init()
 
     LOGI(" - Graphics.");
     gfx_init(VIEW_WIDTH, VIEW_HEIGHT);
+    world_box.w = view_width;
+    world_box.h = view_height;
+    world_box.x = view_width/2.0;
+    world_box.y = view_height/2.0;
 
     LOGI(" - Player.");
     player_init(player);
@@ -409,6 +415,8 @@ void draw()
 
     gfx_clear_buffer(r,g,b);
 
+    gfx_draw_rect(&world_box, COLOR_BLACK, 0.0, 1.0, 1.0, false, true);
+
     // projectiles
     // -----------------------------------------------------------------------
     for(int i = 0; i < plist->count; ++i)
@@ -456,4 +464,53 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             }
         }
     }
+}
+
+bool is_in_world(Rect* r)
+{
+    return rectangles_colliding(&world_box, r);
+}
+
+// rect is contained inside of limit
+Vector2f limit_rect_pos(Rect* limit, Rect* rect)
+{
+    // printf("before: "); print_rect(rect);
+    float lx0 = limit->x - limit->w/2.0;
+    float lx1 = lx0 + limit->w;
+    float ly0 = limit->y - limit->h/2.0;
+    float ly1 = ly0 + limit->h;
+
+    float px0 = rect->x - rect->w/2.0;
+    float px1 = px0 + rect->w;
+    float py0 = rect->y - rect->h/2.0;
+    float py1 = py0 + rect->h;
+
+    float _x = rect->x;
+    float _y = rect->y;
+    Vector2f adj = {0};
+
+    if(px0 < lx0)
+    {
+        rect->x = lx0+rect->w/2.0;
+        adj.x = rect->x - _x;
+    }
+    if(px1 > lx1)
+    {
+        rect->x = lx1-rect->w/2.0;
+        adj.x = rect->x - _x;
+    }
+    if(py0 < ly0)
+    {
+        rect->y = ly0+rect->h/2.0;
+        adj.y = rect->y - _y;
+    }
+    if(py1 > ly1)
+    {
+        rect->y = ly1-rect->h/2.0;
+        adj.y = rect->y - _y;
+    }
+    // printf("after: "); print_rect(rect);
+
+    printf("adj: %.2f, %.2f\n", adj.x, adj.y);
+    return adj;
 }
