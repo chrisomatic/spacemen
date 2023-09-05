@@ -16,6 +16,7 @@
 
 typedef enum
 {
+    ROLE_UNKNOWN,
     ROLE_LOCAL,
     ROLE_CLIENT,
     ROLE_SERVER,

@@ -27,13 +27,16 @@ bool debug_enabled = false;
 
 void parse_args(int argc, char* argv[]);
 void init();
+void init_server();
 void deinit();
+void start_menu();
 void start_local();
 void start_client();
 void start_server();
 void simulate(double);
 void simulate_client(double);
 void draw();
+void draw_menu();
 
 void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
@@ -48,12 +51,21 @@ int main(int argc, char* argv[])
 
     parse_args(argc, argv);
 
+    time_t t;
+    srand((unsigned) time(&t));
+
     switch(role)
     {
+        case ROLE_UNKNOWN:
+            init();
+            start_menu();
+            break;
         case ROLE_LOCAL:
+            init();
             start_local();
             break;
         case ROLE_CLIENT:
+            init();
             start_client();
             break;
         case ROLE_SERVER:
@@ -66,7 +78,7 @@ int main(int argc, char* argv[])
 
 void parse_args(int argc, char* argv[])
 {
-    role = ROLE_LOCAL;
+    role = ROLE_UNKNOWN;
 
     if(argc > 1)
     {
@@ -74,8 +86,12 @@ void parse_args(int argc, char* argv[])
         {
             if(argv[i][0] == '-' && argv[i][1] == '-')
             {
+                // local
+                if(strncmp(argv[i]+2,"local",5) == 0)
+                    role = ROLE_LOCAL;
+
                 // server
-                if(strncmp(argv[i]+2,"server",6) == 0)
+                else if(strncmp(argv[i]+2,"server",6) == 0)
                     role = ROLE_SERVER;
 
                 // client
@@ -90,17 +106,60 @@ void parse_args(int argc, char* argv[])
     }
 }
 
+void start_menu()
+{
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
+
+    double curr_time = timer_get_time();
+    double new_time  = 0.0;
+    double accum = 0.0;
+
+    const double dt = 1.0/TARGET_FPS;
+
+    // main game loop
+    for(;;)
+    {
+        new_time = timer_get_time();
+        double frame_time = new_time - curr_time;
+        curr_time = new_time;
+
+        accum += frame_time;
+
+        window_poll_events();
+        if(window_should_close())
+            break;
+
+        while(accum >= dt)
+            accum -= dt;
+
+        draw_menu();
+
+        if(role != ROLE_UNKNOWN)
+            break;
+
+        timer_wait_for_frame(&game_timer);
+        window_swap_buffers();
+        window_mouse_update_actions();
+    }
+
+    switch(role)
+    {
+        case ROLE_LOCAL:
+            start_local();
+            break;
+        case ROLE_CLIENT:
+            start_client();
+            break;
+        case ROLE_SERVER:
+            deinit();
+            start_server();
+            break;
+    }
+}
+
 void start_local()
 {
-    LOGI("--------------");
-    LOGI("Starting Local");
-    LOGI("--------------");
-
-    time_t t;
-    srand((unsigned) time(&t));
-
-    init();
-
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
 
@@ -141,13 +200,6 @@ void start_local()
 
 void start_client()
 {
-    LOGI("---------------");
-    LOGI("Starting Client");
-    LOGI("---------------");
-
-    time_t t;
-    srand((unsigned) time(&t));
-
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
 
@@ -159,8 +211,6 @@ void start_client()
 
     LOGN("Client ID: %d", client_id);
     player = &players[client_id];
-
-    init();
 
     double curr_time = timer_get_time();
     double new_time  = 0.0;
@@ -204,17 +254,16 @@ void start_client()
 
 void start_server()
 {
-    LOGI("---------------");
-    LOGI("Starting Server");
-    LOGI("---------------");
 
-    time_t t;
-    srand((unsigned) time(&t));
+    init_server();
+    net_server_start();
+}
 
+void init_server()
+{
     view_width = VIEW_WIDTH;
     view_height = VIEW_HEIGHT;
 
-    // server init
     //gfx_image_init(); // todo
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
@@ -223,7 +272,7 @@ void start_server()
 
     projectile_init();
 
-    net_server_start();
+
 }
 
 void init()
@@ -297,12 +346,60 @@ void simulate_client(double dt)
 
 }
 
-static char lines[100][100+1] = {0};
-static int line_count = 0;
 static uint32_t background_color = 0x00303030;
 
-int num_clicks = 0;
-float v1 = 0.0;
+void draw_menu()
+{
+    uint8_t r = background_color >> 16;
+    uint8_t g = background_color >> 8;
+    uint8_t b = background_color >> 0;
+
+    gfx_clear_buffer(r,g,b);
+
+    for(int i = 0; i < 1000; ++i)
+    {
+
+        int rx = rand() % view_width;
+        int ry = rand() % view_height;
+        int s = (rand() % 5) + 1;
+
+        gfx_draw_rect_xywh(rx, ry, 1, 1, COLOR_WHITE, 0.0, s, 1.0, true, true);
+    }
+
+    uint8_t tr = rand() % 256;
+    uint8_t tg = rand() % 256;
+    uint8_t tb = rand() % 256;
+
+    float title_scale = 3.0;
+    Vector2f title_size = gfx_string_get_size(title_scale, "SPACEMEN");
+
+    gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR(tr,tg,tb), title_scale, 0.0, 1.0, true, true, "SPACEMEN");
+
+    imgui_begin_panel("Options",(view_width-200)/2.0,(view_height+100)/2.0, false);
+        if(imgui_button("Play Local"))
+        {
+            role = ROLE_LOCAL;
+        }
+        else if(imgui_button("Join Local Server"))
+        {
+            net_client_set_server_ip("127.0.0.1");
+            role = ROLE_CLIENT;
+        }
+        else if(imgui_button("Join Public Server"))
+        {
+            net_client_set_server_ip("66.228.36.123");
+            role = ROLE_CLIENT;
+        }
+        else if(imgui_button("Host Server"))
+        {
+            role = ROLE_SERVER;
+        }
+        else if(imgui_button("Exit"))
+        {
+            exit(0);
+        }
+    imgui_end();
+}
 
 void draw()
 {
