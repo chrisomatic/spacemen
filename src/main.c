@@ -511,6 +511,6 @@ Vector2f limit_rect_pos(Rect* limit, Rect* rect)
     }
     // printf("after: "); print_rect(rect);
 
-    printf("adj: %.2f, %.2f\n", adj.x, adj.y);
+    // printf("adj: %.2f, %.2f\n", adj.x, adj.y);
     return adj;
 }
