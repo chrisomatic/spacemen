@@ -267,4 +267,6 @@ void player_lerp(Player* p, double delta_t)
 
     p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
 
+    p->energy = lerp(p->server_state_prior.energy, p->server_state_target.energy,t);
+
 }
