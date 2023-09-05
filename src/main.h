@@ -40,6 +40,8 @@ typedef enum
 
 #define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
 
+extern bool initialized;
+extern bool back_to_menu;
 extern bool paused;
 extern bool debug_enabled;
 extern Timer game_timer;

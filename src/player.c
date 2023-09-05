@@ -15,6 +15,7 @@ void player_init(Player* p)
 {
     if(role != ROLE_SERVER)
     {
+        // if(player_image != -1)
         player_image = gfx_load_image("src/img/spaceship.png", false, true, 32, 32);
     }
 
@@ -31,23 +32,26 @@ void player_init(Player* p)
     p->velocity_limit = 500.0;
     p->energy = MAX_ENERGY/2.0;
 
-    player->hit_box.x = player->pos.x;
-    player->hit_box.y = player->pos.y;
+    p->hit_box.x = p->pos.x;
+    p->hit_box.y = p->pos.y;
     GFXImage* img = &gfx_images[player_image];
     float wh = MAX(img->element_width, img->element_height)*0.9;
-    player->hit_box.w = wh;
-    player->hit_box.h = wh;
-    memcpy(&player->hit_box_prior, &player->hit_box, sizeof(Rect));
+    p->hit_box.w = wh;
+    p->hit_box.h = wh;
+    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
 
-    window_controls_add_key(&player->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_W);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_S);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_J);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
+    // if(p == player)
+    // {
+        window_controls_add_key(&player->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_W);
+        window_controls_add_key(&player->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_S);
+        window_controls_add_key(&player->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
+        window_controls_add_key(&player->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
+        window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
+        window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_J);
+        window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
+        window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
+        window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
+    // }
 }
 
 void player_init_other(int index)
@@ -111,8 +115,11 @@ void player_update(Player* p, double delta_t)
     if(p->actions[PLAYER_ACTION_DEBUG].toggled_on)
         debug_enabled = !debug_enabled;
 
-    if(p->actions[PLAYER_ACTION_PAUSE].toggled_on)
-        paused = !paused;
+    if(role == ROLE_LOCAL)
+    {
+        if(p->actions[PLAYER_ACTION_PAUSE].toggled_on)
+            paused = !paused;
+    }
 
     if(paused) return;
 

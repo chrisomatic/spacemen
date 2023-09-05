@@ -15,6 +15,8 @@
 // Global Vars
 // =========================
 
+bool initialized = false;
+bool back_to_menu = false;
 bool paused = false;
 bool debug_enabled = false;
 Timer game_timer = {0};
@@ -32,8 +34,7 @@ void init();
 void init_server();
 void deinit();
 void start_menu();
-void start_local();
-void start_client();
+void start();
 void start_server();
 void simulate(double);
 void simulate_client(double);
@@ -56,25 +57,41 @@ int main(int argc, char* argv[])
     time_t t;
     srand((unsigned) time(&t));
 
-    switch(role)
+
+    for(;;)
     {
-        case ROLE_UNKNOWN:
-            init();
-            start_menu();
-            break;
-        case ROLE_LOCAL:
-            init();
-            start_local();
-            break;
-        case ROLE_CLIENT:
-            init();
-            start_client();
-            break;
-        case ROLE_SERVER:
-            start_server();
+
+        if(back_to_menu)
+        {
+            role = ROLE_UNKNOWN;
+            back_to_menu = false;
+        }
+
+        switch(role)
+        {
+            case ROLE_UNKNOWN:
+                init();
+                start_menu();
+                break;
+            case ROLE_LOCAL:
+                init();
+                start();
+                break;
+            case ROLE_CLIENT:
+                init();
+                start();
+                break;
+            case ROLE_SERVER:
+                deinit();
+                start_server();
+                break;
+        }
+
+        if(window_should_close())
             break;
     }
 
+    printf("return\n");
     return 0;
 }
 
@@ -144,26 +161,30 @@ void start_menu()
         window_swap_buffers();
         window_mouse_update_actions();
     }
-
-    switch(role)
-    {
-        case ROLE_LOCAL:
-            start_local();
-            break;
-        case ROLE_CLIENT:
-            start_client();
-            break;
-        case ROLE_SERVER:
-            deinit();
-            start_server();
-            break;
-    }
 }
 
-void start_local()
+void start()
 {
+    bool is_client = (role == ROLE_CLIENT);
+
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
+
+    if(is_client)
+    {
+        net_client_init();
+
+        int client_id = net_client_connect();
+        if(client_id < 0)
+            return;
+
+        LOGN("Client ID: %d", client_id);
+        player = &players[client_id];
+    }
+    else
+    {
+        player = &players[0];
+    }
 
     double curr_time = timer_get_time();
     double new_time  = 0.0;
@@ -184,9 +205,26 @@ void start_local()
         if(window_should_close())
             break;
 
+        if(back_to_menu)
+            break;
+
+        if(is_client)
+        {
+            if(!net_client_is_connected())
+                break;
+        }
+
         while(accum >= dt)
         {
-            simulate(dt);
+            if(is_client)
+            {
+                net_client_update();
+                simulate_client(dt); // client-side prediction
+            }
+            else
+            {
+                simulate(dt);
+            }
             accum -= dt;
         }
 
@@ -197,66 +235,15 @@ void start_local()
         window_mouse_update_actions();
     }
 
-    deinit();
-}
-
-void start_client()
-{
-    timer_set_fps(&game_timer,TARGET_FPS);
-    timer_begin(&game_timer);
-
-    net_client_init();
-
-    int client_id = net_client_connect();
-    if(client_id < 0)
-        return;
-
-    LOGN("Client ID: %d", client_id);
-    player = &players[client_id];
-
-    double curr_time = timer_get_time();
-    double new_time  = 0.0;
-    double accum = 0.0;
-
-    const double dt = 1.0/TARGET_FPS;
-
-    // main game loop
-    for(;;)
+    if(is_client)
     {
-        new_time = timer_get_time();
-        double frame_time = new_time - curr_time;
-        curr_time = new_time;
-
-        accum += frame_time;
-
-        window_poll_events();
-        if(window_should_close())
-            break;
-
-        if(!net_client_is_connected())
-            break;
-
-        while(accum >= dt)
-        {
-            net_client_update();
-            simulate_client(dt); // client-side prediction
-            accum -= dt;
-        }
-
-        draw();
-
-        timer_wait_for_frame(&game_timer);
-        window_swap_buffers();
-        window_mouse_update_actions();
+        net_client_disconnect();
     }
 
-    net_client_disconnect();
-    deinit();
 }
 
 void start_server()
 {
-
     init_server();
     net_server_start();
 }
@@ -274,11 +261,13 @@ void init_server()
 
     projectile_init();
 
-
 }
 
 void init()
 {
+    if(initialized) return;
+    initialized = true;
+
     LOGI("Resolution: %d %d",VIEW_WIDTH, VIEW_HEIGHT);
     bool success = window_init(VIEW_WIDTH, VIEW_HEIGHT);
 
@@ -313,6 +302,8 @@ void init()
 
 void deinit()
 {
+    if(!initialized) return;
+    initialized = false;
     shader_deinit();
     window_deinit();
 }
@@ -454,10 +445,10 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
     {
         if(action == GLFW_PRESS)
         {
-            // if(key == GLFW_KEY_ESCAPE)
-            // {
-            //     window_enable_cursor();
-            // }
+            if(key == GLFW_KEY_ESCAPE)
+            {
+                back_to_menu = true;
+            }
             if(ctrl && key == GLFW_KEY_C)
             {
                 window_set_close(1);
