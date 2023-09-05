@@ -25,6 +25,9 @@ Rect world_box = {0};
 
 
 
+Vector2i stars[1000] = {0};
+int stars_size[1000] = {0};
+
 // =========================
 // Function Prototypes
 // =========================
@@ -40,6 +43,10 @@ void simulate(double);
 void simulate_client(double);
 void draw();
 void draw_menu();
+
+void stars_init();
+void stars_update();
+void stars_draw();
 
 void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
@@ -71,6 +78,7 @@ int main(int argc, char* argv[])
         {
             case ROLE_UNKNOWN:
                 init();
+                stars_init();
                 start_menu();
                 break;
             case ROLE_LOCAL:
@@ -167,6 +175,7 @@ void start_menu()
         while(accum >= dt)
             accum -= dt;
 
+        stars_update();
         draw_menu();
 
         if(role != ROLE_UNKNOWN)
@@ -185,6 +194,7 @@ void start()
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
 
+
     if(is_client)
     {
         net_client_init();
@@ -198,6 +208,7 @@ void start()
     }
     else
     {
+        stars_init(); //TODO
         player = &players[0];
     }
 
@@ -336,7 +347,11 @@ void deinit()
 
 void simulate(double dt)
 {
-    if(!paused) projectile_update(dt);
+    if(!paused)
+    {
+        projectile_update(dt);
+        stars_update();
+    }
 
     // player_update(player, dt);
     for(int i = 0; i < MAX_PLAYERS; ++i)
@@ -371,9 +386,6 @@ void simulate_client(double dt)
 
 uint32_t background_color = 0x00303030;
 int menu_selected_option = 0;
-
-Vector2i stars[1000] = {0};
-int stars_size[1000] = {0};
 
 void draw_menu()
 {
@@ -413,31 +425,7 @@ void draw_menu()
 
     gfx_clear_buffer(r,g,b);
 
-    static bool init_stars = false;
-    if(!init_stars)
-    {
-        init_stars = true;
-
-        for(int i = 0; i < 1000; ++i)
-        {
-            stars[i].x = rand() % view_width;
-            stars[i].y = rand() % view_height;
-            stars_size[i] = (rand() % 3) + 1;
-        }
-    }
-
-    for(int i = 0; i < 1000; ++i)
-    {
-        stars[i].x -= (stars_size[i]);
-
-        if(stars[i].x <= -5)
-        {
-            stars[i].x = view_width;
-            stars[i].y = rand() % view_height;
-            stars_size[i] = (rand() % 3) + 1;
-        }
-        gfx_draw_rect_xywh(stars[i].x, stars[i].y, 1, 1, COLOR_WHITE, 0, stars_size[i], 1.0, true, true);
-    }
+    stars_draw();
 
     // // random stars
     // for(int i = 0; i < 1000; ++i)
@@ -509,6 +497,10 @@ void draw()
 
     gfx_draw_rect(&world_box, COLOR_BLACK, 0.0, 1.0, 1.0, false, true);
 
+    //TODO
+    if(role == ROLE_LOCAL)
+        stars_draw();
+
     // projectiles
     // -----------------------------------------------------------------------
     for(int i = 0; i < plist->count; ++i)
@@ -533,6 +525,39 @@ void draw()
             imgui_color_picker("Window Background Color", &background_color);
             imgui_theme_editor();
         imgui_end();
+    }
+}
+
+void stars_init()
+{
+    for(int i = 0; i < 1000; ++i)
+    {
+        stars[i].x = rand() % view_width;
+        stars[i].y = rand() % view_height;
+        stars_size[i] = (rand() % 3) + 1;
+    }
+}
+
+void stars_update()
+{
+    for(int i = 0; i < 1000; ++i)
+    {
+
+        stars[i].x -= (stars_size[i]);
+        if(stars[i].x <= -5)
+        {
+            stars[i].x = view_width;
+            stars[i].y = rand() % view_height;
+            stars_size[i] = (rand() % 3) + 1;
+        }
+    }
+}
+
+void stars_draw()
+{
+    for(int i = 0; i < 1000; ++i)
+    {
+        gfx_draw_rect_xywh(stars[i].x, stars[i].y, 1, 1, COLOR_WHITE, 0, stars_size[i], 1.0, true, true);
     }
 }
 
