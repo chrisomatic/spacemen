@@ -462,7 +462,7 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
 
     if(key_mode == KEY_MODE_NORMAL)
     {
-        if(action == GLFW_PRESS || action == GLFW_RELEASE)
+        if(action == GLFW_PRESS || action == GLFW_RELEASE || action == GLFW_REPEAT)
         {
             for(int i = 0; i < window_keys_count; ++i)
             {
@@ -475,6 +475,7 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                         (*wk->state) = false;
                 }
             }
+            // printf("key: %3d, state: %s\n", key, action == GLFW_PRESS ? "press" : (action == GLFW_RELEASE ? "release" : "repeat"));
         }
     }
     else if(key_mode == KEY_MODE_TEXT)

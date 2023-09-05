@@ -278,6 +278,7 @@ void init_server()
     //gfx_image_init(); // todo
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
+        players[i].active = false;
         player_init(&players[i]);
     }
 
@@ -317,6 +318,7 @@ void init()
     LOGI(" - Players.");
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
+        players[i].active = false;
         player_init(&players[i]);
     }
 
@@ -370,22 +372,28 @@ void simulate_client(double dt)
 uint32_t background_color = 0x00303030;
 int menu_selected_option = 0;
 
+Vector2i stars[1000] = {0};
+int stars_size[1000] = {0};
+
 void draw_menu()
 {
-    if(!menu_keys_prior.down && menu_keys.down)
+    if(menu_keys.down)
     {
+        menu_keys.down = false;
         menu_selected_option++;
         if(menu_selected_option > 4) menu_selected_option = 0;
     }
 
-    if(!menu_keys_prior.up && menu_keys.up)
+    if(menu_keys.up)
     {
+        menu_keys.up = false;
         menu_selected_option--;
         if(menu_selected_option < 0) menu_selected_option = 4;
     }
 
-    if(!menu_keys_prior.enter && menu_keys.enter)
+    if(menu_keys.enter)
     {
+        menu_keys.enter = false;
         switch(menu_selected_option)
         {
             case 0: role = ROLE_LOCAL; return;
@@ -405,14 +413,41 @@ void draw_menu()
 
     gfx_clear_buffer(r,g,b);
 
+    static bool init_stars = false;
+    if(!init_stars)
+    {
+        init_stars = true;
+
+        for(int i = 0; i < 1000; ++i)
+        {
+            stars[i].x = rand() % view_width;
+            stars[i].y = rand() % view_height;
+            stars_size[i] = (rand() % 3) + 1;
+        }
+    }
+
     for(int i = 0; i < 1000; ++i)
     {
-        int rx = rand() % view_width;
-        int ry = rand() % view_height;
-        int s = (rand() % 5) + 1;
+        stars[i].x -= (stars_size[i]);
 
-        gfx_draw_rect_xywh(rx, ry, 1, 1, COLOR_WHITE, 0.0, s, 1.0, true, true);
+        if(stars[i].x <= -5)
+        {
+            stars[i].x = view_width;
+            stars[i].y = rand() % view_height;
+            stars_size[i] = (rand() % 3) + 1;
+        }
+        gfx_draw_rect_xywh(stars[i].x, stars[i].y, 1, 1, COLOR_WHITE, 0, stars_size[i], 1.0, true, true);
     }
+
+    // // random stars
+    // for(int i = 0; i < 1000; ++i)
+    // {
+    //     int rx = rand() % view_width;
+    //     int ry = rand() % view_height;
+    //     int s = (rand() % 5) + 1;
+    //     // gfx_draw_rect_xywh(rx, ry, 1, 1, COLOR_WHITE, 0.0, s, 1.0, true, true);
+    //     gfx_draw_rect_xywh(rx, ry, 1, 1, COLOR_RAND, 0.0, s, 1.0, true, true);
+    // }
 
     uint8_t tr = rand() % 256;
     uint8_t tg = rand() % 256;
