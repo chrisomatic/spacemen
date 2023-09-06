@@ -1140,6 +1140,7 @@ void net_client_update()
                         p->server_state_target.pos.x = pos.x;
                         p->server_state_target.pos.y = pos.y;
                         p->server_state_target.angle = angle;
+                        p->server_state_target.energy = energy;
                         p->server_state_target.hp = hp;
                     }
 
