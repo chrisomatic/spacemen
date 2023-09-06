@@ -90,6 +90,7 @@ PACK(struct PlayerNetState
     Vector2f pos;
     float angle;
     float energy;
+    float hp;
 });
 
 typedef struct PlayerNetState PlayerNetState;
@@ -100,6 +101,7 @@ typedef struct
     Vector2f pos;
     float angle;
     float energy;
+    float hp;
 } ObjectState;
 
 extern char* server_ip_address;

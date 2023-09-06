@@ -7,7 +7,6 @@
 #include "player.h"
 #include "projectile.h"
 
-
 Projectile projectiles[MAX_PROJECTILES];
 glist* plist = NULL;
 
@@ -46,6 +45,7 @@ void projectile_add(Player* p, float angle_offset)
 
     proj.dead = false;
     proj.angle_deg = p->angle_deg;
+    proj.damage = 10.0;
 
     proj.pos.x = p->pos.x;
     proj.pos.y = p->pos.y;
@@ -155,6 +155,7 @@ void projectile_handle_collisions(float delta_t)
             if(hit)
             {
                 printf("player %d got hit!\n", j);
+                player_hurt(&players[j], p->damage);
                 p->dead = true;
                 break;
             }

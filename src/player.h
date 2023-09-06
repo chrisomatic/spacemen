@@ -34,6 +34,9 @@ typedef struct
 {
     bool active;
 
+    float hp;
+    float hp_max;
+
     // physics
     Vector2f pos;
     Vector2f vel;
@@ -74,6 +77,8 @@ void player_update(Player* p, double delta_t);
 void player_add_energy(Player* p, float e);
 void player_update_hit_box(Player* p);
 void player_draw(Player* p);
+void player_hurt(Player* p, float damage);
+void player_die(Player* p);
 
 // networking
 void player_handle_net_inputs(Player* p, double delta_t);

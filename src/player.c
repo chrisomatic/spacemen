@@ -46,6 +46,8 @@ void player_init(Player* p)
     p->velocity_limit = 500.0;
     p->energy = MAX_ENERGY/2.0;
     p->force_field = false;
+    p->hp_max = 100.0;
+    p->hp = p->hp_max;
 
     p->hit_box.x = p->pos.x;
     p->hit_box.y = p->pos.y;
@@ -53,6 +55,7 @@ void player_init(Player* p)
     float wh = MAX(img->element_width, img->element_height)*0.9;
     p->hit_box.w = wh;
     p->hit_box.h = wh;
+
     memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
 }
 
@@ -223,6 +226,21 @@ void player_update_hit_box(Player* p)
 
 }
 
+void player_die(Player* p)
+{
+    // @TODO
+}
+
+void player_hurt(Player* p, float damage)
+{
+    p->hp -= damage;
+    if(p->hp <= 0)
+    {
+        p->hp = 0;
+        player_die(p);
+    }
+}
+
 void player_draw(Player* p)
 {
     if(!p->active) return;
@@ -245,25 +263,27 @@ void player_draw(Player* p)
 
     if(p == player)
     {
+        // draw hp
+        float hp_bar_width  = view_width/2.0;
+        float red_width = hp_bar_width*(p->hp/p->hp_max);
+        float hp_bar_height = 15.0;
+        // float hp_bar_padding = 4.0;
+
+        float hp_bar_x = (view_width)/2.0;
+        float hp_bar_y = view_height-hp_bar_height-5.0;
+
+        gfx_draw_rect_xywh(hp_bar_x, hp_bar_y, hp_bar_width, hp_bar_height, COLOR_BLACK,0.0,1.0,0.7,true,false);
+        gfx_draw_rect_xywh(hp_bar_x + red_width/2.0 - hp_bar_width/2.0, hp_bar_y, red_width, hp_bar_height, 0x00CC0000,0.0,1.0,0.4,true,false);
+        gfx_draw_rect_xywh(hp_bar_x, hp_bar_y, hp_bar_width, hp_bar_height, COLOR_BLACK,0.0,1.0,0.7,false,false); // border
 
         // draw energy
-        float energy_bar_width  = view_width/2.0;
-        float red_width = energy_bar_width*(p->energy/MAX_ENERGY);
-        float energy_bar_height = 15.0;
-        float energy_bar_padding = 4.0;
-
-        float energy_bar_x = (view_width)/2.0;
-        float energy_bar_y = view_height-energy_bar_height-5.0;
-
-        gfx_draw_rect_xywh(energy_bar_x, energy_bar_y, energy_bar_width, energy_bar_height, COLOR_BLACK,0.0,1.0,0.7,true,false);
-        gfx_draw_rect_xywh(energy_bar_x + red_width/2.0 - energy_bar_width/2.0, energy_bar_y, red_width, energy_bar_height, 0x00CC0000,0.0,1.0,0.4,true,false);
-        gfx_draw_rect_xywh(energy_bar_x, energy_bar_y, energy_bar_width, energy_bar_height, COLOR_BLACK,0.0,1.0,0.7,false,false); // border
+        float energy_width = hp_bar_width*(p->energy/MAX_ENERGY);
+        gfx_draw_rect_xywh(hp_bar_x + energy_width/2.0 - hp_bar_width/2.0, hp_bar_y + hp_bar_height - 5.0, energy_width, hp_bar_height/4.0, COLOR_YELLOW, 0.0,1.0,0.4,true,false);
 
 
         Vector2f l = gfx_draw_string(10.0, view_height-30.0, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->vel.x, p->vel.y);
         gfx_draw_string(10.0, view_height-30.0+l.y, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->pos.x, p->pos.y);
     }
-
 }
 
 void player_handle_net_inputs(Player* p, double delta_t)
@@ -303,7 +323,7 @@ void player_lerp(Player* p, double delta_t)
     p->pos.y = lp.y;
 
     p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
-
     p->energy = lerp(p->server_state_prior.energy, p->server_state_target.energy,t);
+    p->hp = lerp(p->server_state_prior.hp, p->server_state_target.hp, t);
 
 }

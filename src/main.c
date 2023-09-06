@@ -293,7 +293,7 @@ void init_server()
     world_box.x = view_width/2.0;
     world_box.y = view_height/2.0;
 
-    //gfx_image_init(); // todo
+    gfx_image_init();
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
         players[i].active = false;
@@ -301,7 +301,6 @@ void init_server()
     }
 
     projectile_init();
-
 }
 
 void init()

@@ -17,6 +17,7 @@ typedef struct
 
     Player* shooter;
 
+    float damage;
     float time;
     float ttl;
     bool dead;

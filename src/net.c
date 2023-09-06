@@ -401,6 +401,9 @@ static void server_send(PacketType type, ClientInfo* cli)
                     memcpy(&pkt.data[index],&server.clients[i].player_state.energy,sizeof(float)); // energy
                     index += sizeof(float);
 
+                    memcpy(&pkt.data[index],&server.clients[i].player_state.hp,sizeof(float)); // hp
+                    index += sizeof(float);
+
                     num_clients++;
                 }
             }
@@ -487,10 +490,13 @@ static void server_update_players()
             cli->input_count = 0;
         }
 
+        projectile_handle_collisions(1.0/TARGET_FPS);
+
         cli->player_state.pos.x = p->pos.x;
         cli->player_state.pos.y = p->pos.y;
         cli->player_state.angle = p->angle_deg;
         cli->player_state.energy = p->energy;
+        cli->player_state.hp = p->hp;
     }
 }
 
@@ -1022,12 +1028,15 @@ void net_client_update()
                         Vector2f pos;
                         float angle;
                         float energy;
+                        float hp;
 
                         memcpy(&pos, &srvpkt.data[index], sizeof(Vector2f));
                         index += sizeof(Vector2f);
                         memcpy(&angle, &srvpkt.data[index],sizeof(float));
                         index += sizeof(float);
                         memcpy(&energy, &srvpkt.data[index], sizeof(float));
+                        index += sizeof(float);
+                        memcpy(&hp, &srvpkt.data[index], sizeof(float));
                         index += sizeof(float);
 
                         //LOGN("      Pos: %f, %f. Angle: %f", pos.x, pos.y, angle);
@@ -1126,11 +1135,12 @@ void net_client_update()
                         p->server_state_prior.pos.y = p->pos.y;
                         p->server_state_prior.angle = p->angle_deg;
                         p->server_state_prior.energy = p->energy;
+                        p->server_state_prior.hp = p->hp;
 
                         p->server_state_target.pos.x = pos.x;
                         p->server_state_target.pos.y = pos.y;
                         p->server_state_target.angle = angle;
-                        p->server_state_target.energy = energy;
+                        p->server_state_target.hp = hp;
                     }
 
                     if(index < srvpkt.data_len-1)
