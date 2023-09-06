@@ -11,6 +11,8 @@ Player* player = &players[0];
 int player_image = -1;
 int player_count = 1;
 
+static void player_reset(Player* p);
+
 void player_init_local()
 {
     window_controls_add_key(&player->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_W);
@@ -151,13 +153,8 @@ void player_update(Player* p, double delta_t)
 
     if(p->actions[PLAYER_ACTION_RESET].toggled_on)
     {
-        p->pos.x = VIEW_WIDTH/2.0;
-        p->pos.y = VIEW_HEIGHT/2.0;
-        p->vel.x = 0.0;
-        p->vel.y = 0.0;
-        p->energy = MAX_ENERGY;
+        player_reset(p);
     }
-
 
     player_update_hit_box(p);
 
@@ -223,7 +220,7 @@ void player_update_hit_box(Player* p)
 
 void player_die(Player* p)
 {
-    // @TODO
+    player_reset(p);
 }
 
 void player_hurt(Player* p, float damage)
@@ -321,4 +318,14 @@ void player_lerp(Player* p, double delta_t)
     p->energy = lerp(p->server_state_prior.energy, p->server_state_target.energy,t);
     p->hp = lerp(p->server_state_prior.hp, p->server_state_target.hp, t);
 
+}
+
+static void player_reset(Player* p)
+{
+    p->pos.x = VIEW_WIDTH/2.0;
+    p->pos.y = VIEW_HEIGHT/2.0;
+    p->vel.x = 0.0;
+    p->vel.y = 0.0;
+    p->energy = MAX_ENERGY;
+    p->hp = p->hp_max;
 }
