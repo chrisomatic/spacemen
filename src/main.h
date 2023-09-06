@@ -44,6 +44,8 @@ extern bool initialized;
 extern bool back_to_menu;
 extern bool paused;
 extern bool debug_enabled;
+extern bool game_debug_enabled;
+
 extern Timer game_timer;
 extern GameRole role;
 extern Rect world_box;

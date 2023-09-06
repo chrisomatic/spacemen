@@ -39,8 +39,7 @@ void projectile_add(Player* p, float angle_offset)
 
     float energy_usage = 10.0;
     if(p->energy < energy_usage) return;
-
-    p->energy = RANGE(p->energy - energy_usage,0.0,MAX_ENERGY);
+    player_add_energy(p, -energy_usage);
 
     proj.id = get_id();
     proj.shooter = p;
@@ -167,6 +166,9 @@ void projectile_draw(Projectile* proj)
 {
     gfx_draw_image(projectile_image, 0, proj->pos.x, proj->pos.y, COLOR_TINT_NONE, 1.0, proj->angle_deg, 1.0, true, true);
 
-    gfx_draw_rect(&proj->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
-    gfx_draw_rect(&proj->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+    if(game_debug_enabled)
+    {
+        gfx_draw_rect(&proj->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
+        gfx_draw_rect(&proj->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+    }
 }

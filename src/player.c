@@ -18,8 +18,8 @@ void player_init_local()
     window_controls_add_key(&player->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
     window_controls_add_key(&player->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_J);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_F);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F3);
     window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
     window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
 
@@ -45,6 +45,7 @@ void player_init(Player* p)
     p->turn_rate = 5.0;
     p->velocity_limit = 500.0;
     p->energy = MAX_ENERGY/2.0;
+    p->force_field = false;
 
     p->hit_box.x = p->pos.x;
     p->hit_box.y = p->pos.y;
@@ -90,7 +91,7 @@ void player_update(Player* p, double delta_t)
     }
 
     if(p->actions[PLAYER_ACTION_DEBUG].toggled_on)
-        debug_enabled = !debug_enabled;
+        game_debug_enabled = !game_debug_enabled;
 
     if(role == ROLE_LOCAL)
     {
@@ -164,10 +165,31 @@ void player_update(Player* p, double delta_t)
     p->pos.x += adj.x;
     p->pos.y += adj.y;
 
+    float ff_energy = 70.0*delta_t;
+    if(p->force_field)
+    {
+        player_add_energy(p, -ff_energy);
+        if(p->energy <= ff_energy)
+        {
+            p->force_field = false;
+        }
+    }
+
+    if(p->actions[PLAYER_ACTION_SHIELD].toggled_on)
+    {
+        if(!p->force_field && p->energy >= ff_energy)
+        {
+            p->force_field = true;
+        }
+        else
+        {
+            p->force_field = false;
+        }
+    }
+
     const float pcooldown = 0.1; //seconds
     if(p->actions[PLAYER_ACTION_SHOOT].toggled_on)
     {
-        // energy = -5.0;
         projectile_add(p, 0);
         p->proj_cooldown = pcooldown;
     }
@@ -177,16 +199,19 @@ void player_update(Player* p, double delta_t)
         if(p->proj_cooldown <= 0.0)
         {
             projectile_add(p, 0);
-            // energy = -5.0;
             p->proj_cooldown = pcooldown;
         }
     }
 
-    float energy = 6.0*delta_t;    //0.2
-    p->energy = RANGE(p->energy + energy, 0.0, MAX_ENERGY);
+    float energy = 16.0*delta_t;
+    player_add_energy(p, energy);
 
     // printf("energy: %.2f\n", p->energy);
+}
 
+void player_add_energy(Player* p, float e)
+{
+    p->energy = RANGE(p->energy + e, 0.0, MAX_ENERGY);
 }
 
 void player_update_hit_box(Player* p)
@@ -203,12 +228,20 @@ void player_draw(Player* p)
     if(!p->active) return;
     gfx_draw_image(player_image, 0, p->pos.x,p->pos.y, COLOR_TINT_NONE, 1.0, p->angle_deg, 1.0, true, true);
 
+    if(p->force_field)
+    {
+        gfx_draw_circle(p->pos.x, p->pos.y, p->hit_box.w+3, COLOR_BLUE, 0.2, true, true);
+    }
+
     float name_scale = 0.15;
     Vector2f title_size = gfx_string_get_size(name_scale, "Player 0");
     gfx_draw_string(p->pos.x - p->hit_box.w/2.0, p->pos.y + p->hit_box.h/2.0 + 5, COLOR_RED, name_scale, 0.0, 0.5, true, false, "Player 0");
 
-    // gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
-    // gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+    if(game_debug_enabled)
+    {
+        gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
+        gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+    }
 
     if(p == player)
     {

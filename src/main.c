@@ -19,6 +19,8 @@ bool initialized = false;
 bool back_to_menu = false;
 bool paused = false;
 bool debug_enabled = false;
+bool game_debug_enabled = false;
+
 Timer game_timer = {0};
 GameRole role;
 Rect world_box = {0};
@@ -195,6 +197,11 @@ void start()
     timer_begin(&game_timer);
 
     stars_init();
+
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        players[i].active = false;
+    }
 
     if(is_client)
     {
@@ -388,6 +395,7 @@ void simulate_client(double dt)
 uint32_t background_color = 0x00303030;
 int menu_selected_option = 0;
 
+char name_buf[100];
 
 
 void draw_menu()
@@ -462,6 +470,13 @@ void draw_menu()
     gfx_draw_string(x,y, menu_selected_option == 2 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Join Public Server"); y += 32;
     gfx_draw_string(x,y, menu_selected_option == 3 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Host Server"); y += 32;
     gfx_draw_string(x,y, menu_selected_option == 4 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Exit"); y += 32;
+
+    // TODO
+    // Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");
+    // imgui_begin("name input", s.x + x + 5, y+s.y/4.0);
+    //     imgui_set_text_size(menu_item_scale);
+    //     imgui_text_box("Name", name_buf, 100);
+    // imgui_end();
 
     gfx_draw_image(player_image, 0, x - 34,(view_height+100)/2.0 + (32*menu_selected_option) + 16, COLOR_TINT_NONE, 1.0, 0.0, 1.0, true, true);
 
@@ -577,11 +592,16 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
         {
             if(key == GLFW_KEY_ESCAPE)
             {
-                back_to_menu = true;
+                if(role != ROLE_UNKNOWN)
+                    back_to_menu = true;
             }
             if(ctrl && key == GLFW_KEY_C)
             {
                 window_set_close(1);
+            }
+            if(key == GLFW_KEY_F2)
+            {
+                debug_enabled = !debug_enabled;
             }
         }
     }

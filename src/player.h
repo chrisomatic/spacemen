@@ -16,8 +16,8 @@ enum PlayerActions
     PLAYER_ACTION_RIGHT,
     PLAYER_ACTION_SHOOT,
     PLAYER_ACTION_SHIELD,
-    PLAYER_ACTION_DEBUG,
     PLAYER_ACTION_PAUSE,
+    PLAYER_ACTION_DEBUG,
     PLAYER_ACTION_RESET,
     PLAYER_ACTION_MAX
 };
@@ -48,6 +48,8 @@ typedef struct
     float proj_cooldown;
     float energy;
 
+    bool force_field;
+
     PlayerAction actions[PLAYER_ACTION_MAX];
 
     // networking
@@ -69,6 +71,7 @@ extern int player_image;
 void player_init(Player* p);
 void player_init_local();
 void player_update(Player* p, double delta_t);
+void player_add_energy(Player* p, float e);
 void player_update_hit_box(Player* p);
 void player_draw(Player* p);
 
