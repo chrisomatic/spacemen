@@ -378,6 +378,7 @@ void simulate_client(double dt)
     for(int i = 0; i < plist->count; ++i)
     {
         projectile_lerp(&projectiles[i], dt);
+        projectile_update_hit_box(&projectiles[i]);
     }
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
@@ -589,18 +590,22 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
     {
         if(action == GLFW_PRESS)
         {
+            if(ctrl && key == GLFW_KEY_C)
+            {
+                window_set_close(1);
+            }
             if(key == GLFW_KEY_ESCAPE)
             {
                 if(role != ROLE_UNKNOWN)
                     back_to_menu = true;
             }
-            if(ctrl && key == GLFW_KEY_C)
-            {
-                window_set_close(1);
-            }
-            if(key == GLFW_KEY_F2)
+            else if(key == GLFW_KEY_F2)
             {
                 debug_enabled = !debug_enabled;
+            }
+            else if(key == GLFW_KEY_F3)
+            {
+                game_debug_enabled = !game_debug_enabled;
             }
         }
     }

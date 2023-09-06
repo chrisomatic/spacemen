@@ -19,7 +19,7 @@ void player_init_local()
     window_controls_add_key(&player->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_F);
-    window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F3);
+    // window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F3);
     window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
     window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
 
@@ -92,9 +92,6 @@ void player_update(Player* p, double delta_t)
 
         pa->prior_state = pa->state;
     }
-
-    if(p->actions[PLAYER_ACTION_DEBUG].toggled_on)
-        game_debug_enabled = !game_debug_enabled;
 
     if(role == ROLE_LOCAL)
     {
@@ -220,10 +217,8 @@ void player_add_energy(Player* p, float e)
 void player_update_hit_box(Player* p)
 {
     memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
-
     p->hit_box.x = p->pos.x;
     p->hit_box.y = p->pos.y;
-
 }
 
 void player_die(Player* p)

@@ -98,9 +98,7 @@ void projectile_update(float delta_t)
         proj->pos.x += _dt*proj->vel.x;
         proj->pos.y -= _dt*proj->vel.y; // @minus
 
-        memcpy(&proj->hit_box_prior, &proj->hit_box, sizeof(Rect));
-        proj->hit_box.x = proj->pos.x;
-        proj->hit_box.y = proj->pos.y;
+        projectile_update_hit_box(proj);
     }
 
     // int count = 0;
@@ -114,6 +112,14 @@ void projectile_update(float delta_t)
     }
     // if(count > 0) printf("removed %d\n", count);
 
+}
+
+void projectile_update_hit_box(Projectile* proj)
+{
+    memcpy(&proj->hit_box_prior, &proj->hit_box, sizeof(Rect));
+    proj->hit_box.x = proj->pos.x;
+    proj->hit_box.y = proj->pos.y;
+    // print_rect(&proj->hit_box);
 }
 
 void projectile_lerp(Projectile* p, double delta_t)
@@ -134,6 +140,9 @@ void projectile_lerp(Projectile* p, double delta_t)
     Vector2f lp = lerp2f(&p->server_state_prior.pos,&p->server_state_target.pos,t);
     p->pos.x = lp.x;
     p->pos.y = lp.y;
+    //TODO
+    p->hit_box.w = 10;
+    p->hit_box.h = 10;
 
     p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
 }
