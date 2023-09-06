@@ -1183,6 +1183,28 @@ uint32_t gfx_blend_colors(uint32_t color1, uint32_t color2, float factor)
     return result;
 }
 
+// @NOTE: ret_colors should be of size num_colors * steps
+void gfx_color_gradient(uint32_t colors[], int num_colors, int steps, uint32_t* ret_colors)
+{
+    for(int i = 0; i < num_colors; ++i)
+    {
+        uint32_t c0 = colors[i];
+        uint32_t c1 = colors[(i+1) % num_colors];
+        ret_colors[i*steps] = c0;
+
+        if(i+1 != num_colors)
+        {
+            ret_colors[(i+1)*steps] = c1;
+        }
+
+        for(int j = 1; j < steps; ++j)
+        {
+            ret_colors[i*steps + j] = gfx_blend_colors(c0, c1, (float)j/(float)steps);
+        }
+    }
+}
+
+
 // static functions
 // --------------------------------------------------------
 

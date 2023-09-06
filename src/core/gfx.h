@@ -116,3 +116,4 @@ void gfx_anim_update(GFXAnimation* anim, double delta_t);
 void gfx_color2floats(uint32_t color, float* r, float* g, float* b);
 void gfx_print_times();
 uint32_t gfx_blend_colors(uint32_t color1, uint32_t color2, float factor);
+void gfx_color_gradient(uint32_t colors[], int num_colors, int steps, uint32_t* ret_colors);

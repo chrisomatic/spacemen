@@ -203,8 +203,12 @@ void player_draw(Player* p)
     if(!p->active) return;
     gfx_draw_image(player_image, 0, p->pos.x,p->pos.y, COLOR_TINT_NONE, 1.0, p->angle_deg, 1.0, true, true);
 
-    gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
-    gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+    float name_scale = 0.15;
+    Vector2f title_size = gfx_string_get_size(name_scale, "Player 0");
+    gfx_draw_string(p->pos.x - p->hit_box.w/2.0, p->pos.y + p->hit_box.h/2.0 + 5, COLOR_RED, name_scale, 0.0, 0.5, true, false, "Player 0");
+
+    // gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
+    // gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
 
     if(p == player)
     {

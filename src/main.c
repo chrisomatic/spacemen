@@ -194,6 +194,7 @@ void start()
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
 
+    stars_init();
 
     if(is_client)
     {
@@ -208,7 +209,6 @@ void start()
     }
     else
     {
-        stars_init(); //TODO
         player = &players[0];
     }
 
@@ -364,6 +364,7 @@ void simulate(double dt)
 
 void simulate_client(double dt)
 {
+    stars_update();
     //projectile_update(dt);
     //player_update(player,dt); // client-side prediction
     player_handle_net_inputs(player, dt);
@@ -386,6 +387,8 @@ void simulate_client(double dt)
 
 uint32_t background_color = 0x00303030;
 int menu_selected_option = 0;
+
+
 
 void draw_menu()
 {
@@ -427,24 +430,27 @@ void draw_menu()
 
     stars_draw();
 
-    // // random stars
-    // for(int i = 0; i < 1000; ++i)
-    // {
-    //     int rx = rand() % view_width;
-    //     int ry = rand() % view_height;
-    //     int s = (rand() % 5) + 1;
-    //     // gfx_draw_rect_xywh(rx, ry, 1, 1, COLOR_WHITE, 0.0, s, 1.0, true, true);
-    //     gfx_draw_rect_xywh(rx, ry, 1, 1, COLOR_RAND, 0.0, s, 1.0, true, true);
-    // }
 
-    uint8_t tr = rand() % 256;
-    uint8_t tg = rand() % 256;
-    uint8_t tb = rand() % 256;
+    int num_steps = 80;
+    static int ci = -1;
+    static uint32_t colors[40] = {0};
+    if(ci == -1)
+    {
+        uint32_t color_list[2] = {COLOR_WHITE, COLOR_BLUE};
+        gfx_color_gradient(color_list, 2, num_steps, colors);
+        ci = 0;
+    }
 
+    // uint8_t tr = (rand() % 256) * (rand()%2);
+    // uint8_t tg = (rand() % 256) * (rand()%2);
+    // uint8_t tb = (rand() % 256) * (rand()%2);
     float title_scale = 3.0;
     Vector2f title_size = gfx_string_get_size(title_scale, "SPACEMEN");
+    gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, colors[ci], title_scale, 0.0, 1.0, true, true, "SPACEMEN");
 
-    gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR(tr,tg,tb), title_scale, 0.0, 1.0, true, true, "SPACEMEN");
+    ci++;
+    if(ci >= num_steps*2)
+        ci = 0;
 
     int x = (view_width-200)/2.0;
     int y = (view_height+100)/2.0;
@@ -497,9 +503,7 @@ void draw()
 
     gfx_draw_rect(&world_box, COLOR_BLACK, 0.0, 1.0, 1.0, false, true);
 
-    //TODO
-    if(role == ROLE_LOCAL)
-        stars_draw();
+    stars_draw();
 
     // projectiles
     // -----------------------------------------------------------------------
