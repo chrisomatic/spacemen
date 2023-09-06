@@ -12,10 +12,19 @@ Projectile projectiles[MAX_PROJECTILES];
 glist* plist = NULL;
 
 static int projectile_image;
+static uint16_t id_counter = 0;
 
 static void projectile_remove(int index)
 {
     list_remove(plist, index);
+}
+
+static uint16_t get_id()
+{
+    if(id_counter >= 65535)
+        id_counter = 0;
+
+    return id_counter++;
 }
 
 void projectile_init()
@@ -33,6 +42,7 @@ void projectile_add(Player* p, float angle_offset)
 
     p->energy = RANGE(p->energy - energy_usage,0.0,MAX_ENERGY);
 
+    proj.id = get_id();
     proj.shooter = p;
 
     proj.dead = false;
@@ -113,6 +123,14 @@ void projectile_lerp(Projectile* p, double delta_t)
 
     float tick_time = 1.0/TICK_RATE;
     float t = (p->lerp_t / tick_time);
+
+    if((p->server_state_prior.pos.x == 0.0 && p->server_state_prior.pos.y == 0.0) || p->server_state_prior.id != p->server_state_target.id)
+    {
+        // new projectile, set position and id directly
+        p->server_state_prior.id = p->server_state_target.id;
+        p->id = p->server_state_target.id;
+        memcpy(&p->server_state_prior.pos, &p->server_state_target.pos, sizeof(Vector2f));
+    }
 
     Vector2f lp = lerp2f(&p->server_state_prior.pos,&p->server_state_target.pos,t);
     p->pos.x = lp.x;

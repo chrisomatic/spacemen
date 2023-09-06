@@ -412,11 +412,15 @@ static void server_send(PacketType type, ClientInfo* cli)
 
             for(int i = 0; i < plist->count; ++i)
             {
+                memcpy(&pkt.data[index],&projectiles[i].id,sizeof(uint16_t)); // id
+                index += sizeof(uint16_t);
+
                 memcpy(&pkt.data[index],&projectiles[i].pos,sizeof(Vector2f)); // pos
                 index += sizeof(Vector2f);
 
                 memcpy(&pkt.data[index],&projectiles[i].angle_deg,sizeof(float)); // angle
                 index += sizeof(float);
+
             }
 
             pkt.data_len = index;
@@ -1142,9 +1146,13 @@ void net_client_update()
                         {
                             Projectile* p = &projectiles[i];
 
+                            uint16_t id;
                             Vector2f pos;
                             float angle;
-                            float energy;
+
+
+                            memcpy(&id, &srvpkt.data[index],sizeof(uint16_t));
+                            index += sizeof(uint16_t);
 
                             memcpy(&pos, &srvpkt.data[index], sizeof(Vector2f));
                             index += sizeof(Vector2f);
@@ -1154,10 +1162,12 @@ void net_client_update()
 
                             p->lerp_t = 0.0;
 
+                            p->server_state_prior.id = p->id;
                             p->server_state_prior.pos.x = p->pos.x;
                             p->server_state_prior.pos.y = p->pos.y;
                             p->server_state_prior.angle = p->angle_deg;
 
+                            p->server_state_target.id = id;
                             p->server_state_target.pos.x = pos.x;
                             p->server_state_target.pos.y = pos.y;
                             p->server_state_target.angle = angle;

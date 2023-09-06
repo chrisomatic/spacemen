@@ -7,6 +7,7 @@
 
 typedef struct
 {
+    uint16_t id;
     Vector2f pos;
     Vector2f vel;
     float angle_deg;

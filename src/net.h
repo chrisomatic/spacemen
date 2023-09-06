@@ -96,6 +96,7 @@ typedef struct PlayerNetState PlayerNetState;
 
 typedef struct
 {
+    uint16_t id;
     Vector2f pos;
     float angle;
     float energy;
