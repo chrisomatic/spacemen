@@ -52,6 +52,10 @@ typedef struct
 
     bool force_field;
 
+    // Settings
+    char name[100];
+    uint32_t color;
+
     PlayerAction actions[PLAYER_ACTION_MAX];
 
     // networking

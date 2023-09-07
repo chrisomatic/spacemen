@@ -25,7 +25,12 @@ Timer game_timer = {0};
 GameRole role;
 Rect world_box = {0};
 
-
+// Settings
+uint32_t background_color = 0x00303030;
+int menu_selected_option = 0;
+bool show_settings = false;
+char settings_name[100] = {0};
+uint32_t settings_color = 0xFFFFFFFF;
 
 Vector2i stars[1000] = {0};
 int stars_size[1000] = {0};
@@ -219,6 +224,9 @@ void start()
         player = &players[0];
     }
 
+    memcpy(player->name, settings_name, 100*sizeof(char));
+    player->color = settings_color;
+
     player_init_local();
 
     double curr_time = timer_get_time();
@@ -392,44 +400,8 @@ void simulate_client(double dt)
 
 }
 
-uint32_t background_color = 0x00303030;
-int menu_selected_option = 0;
-
-char name_buf[100];
-
-
 void draw_menu()
 {
-    if(menu_keys.down)
-    {
-        menu_keys.down = false;
-        menu_selected_option++;
-        if(menu_selected_option > 4) menu_selected_option = 0;
-    }
-
-    if(menu_keys.up)
-    {
-        menu_keys.up = false;
-        menu_selected_option--;
-        if(menu_selected_option < 0) menu_selected_option = 4;
-    }
-
-    if(menu_keys.enter)
-    {
-        menu_keys.enter = false;
-        switch(menu_selected_option)
-        {
-            case 0: role = ROLE_LOCAL; return;
-            case 1: role = ROLE_CLIENT; net_client_set_server_ip("127.0.0.1"); return;
-            case 2: role = ROLE_CLIENT; net_client_set_server_ip("66.228.36.123"); return;
-            case 3: role = ROLE_SERVER; return;
-            case 4: exit(0);
-            default: break;
-        }
-    }
-
-    memcpy(&menu_keys_prior, &menu_keys, sizeof(MenuKeys));
-
     uint8_t r = background_color >> 16;
     uint8_t g = background_color >> 8;
     uint8_t b = background_color >> 0;
@@ -438,10 +410,62 @@ void draw_menu()
 
     stars_draw();
 
+    if(show_settings)
+    {
+
+        int x = (view_width-200)/2.0;
+        int y = (view_height-200)/2.0;
+
+        //float menu_item_scale = 0.4;
+
+        //Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");
+        imgui_begin_panel("Settings", x,y, false);
+            //imgui_set_text_size(menu_item_scale);
+            imgui_text_box("Name", settings_name, 100);
+            imgui_color_picker("Color", &settings_color);
+            imgui_newline();
+            if(imgui_button("Return"))
+                show_settings = false;
+        imgui_end();
+
+        return;
+    }
+
+    if(menu_keys.down)
+    {
+        menu_keys.down = false;
+        menu_selected_option++;
+        if(menu_selected_option > 5) menu_selected_option = 0;
+    }
+
+    if(menu_keys.up)
+    {
+        menu_keys.up = false;
+        menu_selected_option--;
+        if(menu_selected_option < 0) menu_selected_option = 5;
+    }
+
+    if(menu_keys.enter)
+    {
+        menu_keys.enter = false;
+        switch(menu_selected_option)
+        {
+            case 0: role = ROLE_LOCAL; return;
+            case 1: role = ROLE_CLIENT; net_client_set_server_ip("66.228.36.123"); return;
+            case 2: role = ROLE_SERVER; return;
+            case 3: role = ROLE_CLIENT; net_client_set_server_ip("127.0.0.1"); return;
+            case 4: show_settings = true; return;
+            case 5: exit(0);
+            default: break;
+        }
+    }
+
+    memcpy(&menu_keys_prior, &menu_keys, sizeof(MenuKeys));
 
     int num_steps = 80;
     static int ci = -1;
-    static uint32_t colors[40] = {0};
+    static uint32_t colors[160] = {0};
+
     if(ci == -1)
     {
         uint32_t color_list[2] = {COLOR_WHITE, COLOR_BLUE};
@@ -466,10 +490,11 @@ void draw_menu()
     float menu_item_scale = 0.4;
 
     gfx_draw_string(x,y, menu_selected_option == 0 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Play Local"); y += 32;
-    gfx_draw_string(x,y, menu_selected_option == 1 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Join Local Server"); y += 32;
-    gfx_draw_string(x,y, menu_selected_option == 2 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Join Public Server"); y += 32;
-    gfx_draw_string(x,y, menu_selected_option == 3 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Host Server"); y += 32;
-    gfx_draw_string(x,y, menu_selected_option == 4 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Exit"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 1 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Play Online"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 2 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Host Local Server"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 3 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Join Local Server"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 4 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Settings"); y += 32;
+    gfx_draw_string(x,y, menu_selected_option == 5 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Exit"); y += 32;
 
     // TODO
     // Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");

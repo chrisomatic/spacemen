@@ -236,7 +236,7 @@ void player_hurt(Player* p, float damage)
 void player_draw(Player* p)
 {
     if(!p->active) return;
-    gfx_draw_image(player_image, 0, p->pos.x,p->pos.y, COLOR_TINT_NONE, 1.0, p->angle_deg, 1.0, true, true);
+    gfx_draw_image(player_image, 0, p->pos.x,p->pos.y, player->color, 1.0, p->angle_deg, 1.0, true, true);
 
     if(p->force_field)
     {
@@ -244,8 +244,8 @@ void player_draw(Player* p)
     }
 
     float name_scale = 0.15;
-    Vector2f title_size = gfx_string_get_size(name_scale, "Player 0");
-    gfx_draw_string(p->pos.x - p->hit_box.w/2.0, p->pos.y + p->hit_box.h/2.0 + 5, COLOR_RED, name_scale, 0.0, 0.5, true, false, "Player 0");
+    Vector2f title_size = gfx_string_get_size(name_scale, player->name);
+    gfx_draw_string(p->pos.x - p->hit_box.w/2.0, p->pos.y + p->hit_box.h/2.0 + 5, p->color, name_scale, 0.0, 0.5, true, false, p->name);
 
     if(game_debug_enabled)
     {
