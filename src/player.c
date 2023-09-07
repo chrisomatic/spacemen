@@ -159,8 +159,51 @@ void player_update(Player* p, double delta_t)
     player_update_hit_box(p);
 
     Vector2f adj = limit_rect_pos(&world_box, &p->hit_box);
-    p->pos.x += adj.x;
-    p->pos.y += adj.y;
+
+    if(FEQ0(adj.x) && FEQ0(adj.y))
+    {
+        // no collision
+    }
+    else
+    {
+        p->pos.x += adj.x;
+        p->pos.y += adj.y;
+
+        float x0 = p->pos.x;
+        float y0 = p->pos.y;
+
+        float x1 = x0 + p->vel.x;
+        float y1 = y0 + p->vel.y;
+
+        // could be useful to include in player struct
+        float vel_angle = calc_angle_rad(x0, y0, x1, y1);
+
+        float xa = cos(vel_angle);
+        float ya = sin(vel_angle);
+
+        float new_angle = 0;
+        if(!FEQ0(adj.x))
+        {
+            new_angle = PI - vel_angle;
+        }
+        else
+        {
+            new_angle = PI*2 - vel_angle;
+        }
+
+        if(!FEQ0(xa))
+        {
+            float xcomp = p->vel.x / cos(vel_angle);
+            p->vel.x = xcomp*cos(new_angle);
+        }
+
+        if(!FEQ0(ya))
+        {
+            float ycomp = p->vel.y / sin(vel_angle);
+            p->vel.y = ycomp*sin(new_angle);
+        }
+
+    }
 
     float ff_energy = 70.0*delta_t;
     if(p->force_field)
@@ -251,6 +294,19 @@ void player_draw(Player* p)
     {
         gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
         gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+
+        float x0 = p->pos.x;
+        float y0 = p->pos.y;
+
+        // Vector2f vn = {.x = p->vel.x, .y = p->vel.y};
+        // normalize(&vn);
+        // float x1 = x0 + vn.x*50;
+        // float y1 = y0 + vn.y*50;
+
+        float x1 = x0 + p->vel.x;
+        float y1 = y0 + p->vel.y;
+
+        gfx_add_line(x0, y0, x1, y1, COLOR_RED);
     }
 
     if(p == player)

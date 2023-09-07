@@ -515,6 +515,7 @@ void draw()
     uint8_t b = background_color >> 0;
 
     gfx_clear_buffer(r,g,b);
+    gfx_clear_lines();
 
     gfx_draw_rect(&world_box, COLOR_BLACK, 0.0, 1.0, 1.0, false, true);
 
@@ -535,6 +536,9 @@ void draw()
         if(p->active)
             player_draw(p);
     }
+
+
+    gfx_draw_lines();
 
     if(debug_enabled)
     {
