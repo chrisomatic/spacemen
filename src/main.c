@@ -16,10 +16,11 @@
 // =========================
 
 bool initialized = false;
-bool back_to_menu = false;
+bool back_to_home = false;
 bool paused = false;
 bool debug_enabled = false;
 bool game_debug_enabled = false;
+bool initiate_game = false;
 
 Timer game_timer = {0};
 GameRole role;
@@ -28,29 +29,57 @@ Rect world_box = {0};
 // Settings
 uint32_t background_color = 0x00303030;
 int menu_selected_option = 0;
-bool show_settings = false;
 char settings_name[100] = {0};
 uint32_t settings_color = 0xFFFFFFFF;
 
 Vector2i stars[1000] = {0};
 int stars_size[1000] = {0};
 
+typedef enum
+{
+    SCREEN_SERVER,
+    SCREEN_HOME,
+    SCREEN_SETTINGS,
+    SCREEN_GAME_START,
+    SCREEN_GAME,
+
+    SCREEN_MAX
+} DisplayScreen;
+DisplayScreen screen = SCREEN_HOME;
+
+typedef struct
+{
+    bool up;
+    bool down;
+    bool enter;
+} MenuKeys;
+MenuKeys menu_keys_prior = {0};
+MenuKeys menu_keys = {0};
+
+
 // =========================
 // Function Prototypes
 // =========================
 
 void parse_args(int argc, char* argv[]);
+
 void init();
 void init_server();
 void deinit();
-void start_menu();
+
 void reset_game();
-void start();
-void start_server();
 void simulate(double);
 void simulate_client(double);
-void draw();
-void draw_menu();
+
+void run_home();
+void draw_home();
+void run_settings();
+void draw_settings();
+void run_game_start();
+void draw_game_start();
+void run_game();
+void draw_game();
+void run_server();
 
 void stars_init();
 void stars_update();
@@ -64,44 +93,67 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 int main(int argc, char* argv[])
 {
+
     init_timer();
     log_init(0);
 
+    screen = SCREEN_HOME;
     parse_args(argc, argv);
 
     time_t t;
     srand((unsigned) time(&t));
 
+    init();
 
     for(;;)
     {
 
-        if(back_to_menu)
+        if(back_to_home)
         {
             role = ROLE_UNKNOWN;
-            back_to_menu = false;
+            back_to_home = false;
+            screen = SCREEN_HOME;
         }
 
-        switch(role)
+        switch(screen)
         {
-            case ROLE_UNKNOWN:
-                init();
-                stars_init();
-                start_menu();
+            case SCREEN_HOME:
+                run_home();
                 break;
-            case ROLE_LOCAL:
-                init();
-                start();
+            case SCREEN_SETTINGS:
+                run_settings();
                 break;
-            case ROLE_CLIENT:
-                init();
-                start();
+            case SCREEN_SERVER:
+                run_server();
                 break;
-            case ROLE_SERVER:
-                deinit();
-                start_server();
+            case SCREEN_GAME_START:
+                run_game_start();
+                break;
+            case SCREEN_GAME:
+                run_game();
                 break;
         }
+
+        // switch(role)
+        // {
+        //     case ROLE_UNKNOWN:
+        //         init();
+        //         stars_init();
+        //         run_home();
+        //         break;
+        //     case ROLE_LOCAL:
+        //         init();
+        //         start();
+        //         break;
+        //     case ROLE_CLIENT:
+        //         init();
+        //         start();
+        //         break;
+        //     case ROLE_SERVER:
+        //         deinit();
+        //         run_server();
+        //         break;
+        // }
 
         if(window_should_close())
             break;
@@ -123,15 +175,25 @@ void parse_args(int argc, char* argv[])
             {
                 // local
                 if(strncmp(argv[i]+2,"local",5) == 0)
+                {
                     role = ROLE_LOCAL;
+                    screen = SCREEN_GAME_START;
+                }
 
                 // server
                 else if(strncmp(argv[i]+2,"server",6) == 0)
+                {
                     role = ROLE_SERVER;
+                    screen = SCREEN_SERVER;
+                }
+
 
                 // client
                 else if(strncmp(argv[i]+2,"client",6) == 0)
+                {
                     role = ROLE_CLIENT;
+                    screen = SCREEN_GAME_START;
+                }
             }
             else
             {
@@ -141,182 +203,6 @@ void parse_args(int argc, char* argv[])
     }
 }
 
-typedef struct
-{
-    bool up;
-    bool down;
-    bool enter;
-} MenuKeys;
-
-MenuKeys menu_keys_prior = {0};
-MenuKeys menu_keys = {0};
-
-void start_menu()
-{
-    window_controls_clear_keys();
-    window_controls_add_key(&menu_keys.up,    GLFW_KEY_W);
-    window_controls_add_key(&menu_keys.down,  GLFW_KEY_S);
-    window_controls_add_key(&menu_keys.enter, GLFW_KEY_ENTER);
-
-    timer_set_fps(&game_timer,TARGET_FPS);
-    timer_begin(&game_timer);
-
-    double curr_time = timer_get_time();
-    double new_time  = 0.0;
-    double accum = 0.0;
-
-    const double dt = 1.0/TARGET_FPS;
-
-    // main game loop
-    for(;;)
-    {
-        new_time = timer_get_time();
-        double frame_time = new_time - curr_time;
-        curr_time = new_time;
-
-        accum += frame_time;
-
-        window_poll_events();
-        if(window_should_close())
-            break;
-
-        while(accum >= dt)
-            accum -= dt;
-
-        stars_update();
-        draw_menu();
-
-        if(role != ROLE_UNKNOWN)
-            break;
-
-        timer_wait_for_frame(&game_timer);
-        window_swap_buffers();
-        window_mouse_update_actions();
-    }
-}
-
-void reset_game()
-{
-    projectile_clear_all();
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        players[i].active = false;
-        player_init(&players[i]);
-    }
-}
-
-void start()
-{
-    bool is_client = (role == ROLE_CLIENT);
-
-    timer_set_fps(&game_timer,TARGET_FPS);
-    timer_begin(&game_timer);
-
-    stars_init();
-
-    if(is_client)
-    {
-        net_client_init();
-
-        int client_id = net_client_connect();
-        if(client_id < 0)
-            return;
-
-        LOGN("Client ID: %d", client_id);
-        player = &players[client_id];
-    }
-    else
-    {
-        reset_game();
-        player = &players[0];
-    }
-
-    memcpy(player->name, settings_name, 100*sizeof(char));
-    player->color = settings_color;
-
-    player_init_local();
-
-    double curr_time = timer_get_time();
-    double new_time  = 0.0;
-    double accum = 0.0;
-
-    const double dt = 1.0/TARGET_FPS;
-
-    // main game loop
-    for(;;)
-    {
-        new_time = timer_get_time();
-        double frame_time = new_time - curr_time;
-        curr_time = new_time;
-
-        accum += frame_time;
-
-        window_poll_events();
-        if(window_should_close())
-            break;
-
-        if(back_to_menu)
-            break;
-
-        if(is_client)
-        {
-            if(!net_client_is_connected())
-                break;
-        }
-
-        while(accum >= dt)
-        {
-            if(is_client)
-            {
-                net_client_update();
-                simulate_client(dt); // client-side prediction
-            }
-            else
-            {
-                simulate(dt);
-            }
-            accum -= dt;
-        }
-
-        draw();
-
-        timer_wait_for_frame(&game_timer);
-        window_swap_buffers();
-        window_mouse_update_actions();
-    }
-
-    if(is_client)
-    {
-        net_client_disconnect();
-    }
-
-}
-
-void start_server()
-{
-    init_server();
-    net_server_start();
-}
-
-void init_server()
-{
-    view_width = VIEW_WIDTH;
-    view_height = VIEW_HEIGHT;
-
-    world_box.w = view_width;
-    world_box.h = view_height;
-    world_box.x = view_width/2.0;
-    world_box.y = view_height/2.0;
-
-    gfx_image_init();
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        players[i].active = false;
-        player_init(&players[i]);
-    }
-
-    projectile_init();
-}
 
 void init()
 {
@@ -356,6 +242,28 @@ void init()
 
     LOGI(" - Projectile.");
     projectile_init();
+
+    stars_init();
+}
+
+void init_server()
+{
+    view_width = VIEW_WIDTH;
+    view_height = VIEW_HEIGHT;
+
+    world_box.w = view_width;
+    world_box.h = view_height;
+    world_box.x = view_width/2.0;
+    world_box.y = view_height/2.0;
+
+    gfx_image_init();
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        players[i].active = false;
+        player_init(&players[i]);
+    }
+
+    projectile_init();
 }
 
 void deinit()
@@ -365,6 +273,17 @@ void deinit()
     shader_deinit();
     window_deinit();
 }
+
+void reset_game()
+{
+    projectile_clear_all();
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        players[i].active = false;
+        player_init(&players[i]);
+    }
+}
+
 
 void simulate(double dt)
 {
@@ -407,7 +326,48 @@ void simulate_client(double dt)
 
 }
 
-void draw_menu()
+
+void run_home()
+{
+    window_controls_clear_keys();
+    window_controls_add_key(&menu_keys.up,    GLFW_KEY_W);
+    window_controls_add_key(&menu_keys.down,  GLFW_KEY_S);
+    window_controls_add_key(&menu_keys.enter, GLFW_KEY_ENTER);
+
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
+    double curr_time = timer_get_time();
+    double new_time  = 0.0;
+    double accum = 0.0;
+    const double dt = 1.0/TARGET_FPS;
+
+    // loop
+    for(;;)
+    {
+        new_time = timer_get_time();
+        double frame_time = new_time - curr_time;
+        curr_time = new_time;
+        accum += frame_time;
+        window_poll_events();
+        if(window_should_close())
+            break;
+        if(role != ROLE_UNKNOWN)
+            break;
+        if(screen != SCREEN_HOME)
+            break;
+        while(accum >= dt)
+            accum -= dt;
+
+        stars_update();
+        draw_home();
+
+        timer_wait_for_frame(&game_timer);
+        window_swap_buffers();
+        window_mouse_update_actions();
+    }
+}
+
+void draw_home()
 {
     uint8_t r = background_color >> 16;
     uint8_t g = background_color >> 8;
@@ -416,27 +376,6 @@ void draw_menu()
     gfx_clear_buffer(r,g,b);
 
     stars_draw();
-
-    if(show_settings)
-    {
-
-        int x = (view_width-200)/2.0;
-        int y = (view_height-200)/2.0;
-
-        //float menu_item_scale = 0.4;
-
-        //Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");
-        imgui_begin_panel("Settings", x,y, false);
-            //imgui_set_text_size(menu_item_scale);
-            imgui_text_box("Name", settings_name, 100);
-            imgui_color_picker("Color", &settings_color);
-            imgui_newline();
-            if(imgui_button("Return"))
-                show_settings = false;
-        imgui_end();
-
-        return;
-    }
 
     if(menu_keys.down)
     {
@@ -457,13 +396,31 @@ void draw_menu()
         menu_keys.enter = false;
         switch(menu_selected_option)
         {
-            case 0: role = ROLE_LOCAL; return;
-            case 1: role = ROLE_CLIENT; net_client_set_server_ip("66.228.36.123"); return;
-            case 2: role = ROLE_SERVER; return;
-            case 3: role = ROLE_CLIENT; net_client_set_server_ip("127.0.0.1"); return;
-            case 4: show_settings = true; return;
-            case 5: exit(0);
-            default: break;
+            case 0:
+                role = ROLE_LOCAL;
+                screen = SCREEN_GAME_START;
+                return;
+            case 1:
+                net_client_set_server_ip("66.228.36.123");
+                role = ROLE_CLIENT;
+                screen = SCREEN_GAME_START;
+                return;
+            case 2:
+                role = ROLE_SERVER;
+                screen = SCREEN_SERVER;
+                return;
+            case 3:
+                net_client_set_server_ip("127.0.0.1");
+                role = ROLE_CLIENT;
+                screen = SCREEN_GAME_START;
+                return;
+            case 4:
+                screen = SCREEN_SETTINGS;
+                return;
+            case 5:
+                exit(0);
+            default:
+                break;
         }
     }
 
@@ -503,44 +460,227 @@ void draw_menu()
     gfx_draw_string(x,y, menu_selected_option == 4 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Settings"); y += 32;
     gfx_draw_string(x,y, menu_selected_option == 5 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Exit"); y += 32;
 
-    // TODO
-    // Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");
-    // imgui_begin("name input", s.x + x + 5, y+s.y/4.0);
-    //     imgui_set_text_size(menu_item_scale);
-    //     imgui_text_box("Name", name_buf, 100);
-    // imgui_end();
-
     gfx_draw_image(player_image, 0, x - 34,(view_height+100)/2.0 + (32*menu_selected_option) + 16, COLOR_TINT_NONE, 1.0, 0.0, 1.0, true, true);
-
-    /*
-    imgui_begin_panel("Options",(view_width-200)/2.0,(view_height+100)/2.0, false);
-        if(imgui_button("Play Local"))
-        {
-            role = ROLE_LOCAL;
-        }
-        else if(imgui_button("Join Local Server"))
-        {
-            net_client_set_server_ip("127.0.0.1");
-            role = ROLE_CLIENT;
-        }
-        else if(imgui_button("Join Public Server"))
-        {
-            net_client_set_server_ip("66.228.36.123");
-            role = ROLE_CLIENT;
-        }
-        else if(imgui_button("Host Server"))
-        {
-            role = ROLE_SERVER;
-        }
-        else if(imgui_button("Exit"))
-        {
-            exit(0);
-        }
-    imgui_end();
-    */
 }
 
-void draw()
+void run_settings()
+{
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
+    double curr_time = timer_get_time();
+    double new_time  = 0.0;
+    double accum = 0.0;
+    const double dt = 1.0/TARGET_FPS;
+
+    back_to_home = false;
+
+    // loop
+    for(;;)
+    {
+        new_time = timer_get_time();
+        double frame_time = new_time - curr_time;
+        curr_time = new_time;
+        accum += frame_time;
+        window_poll_events();
+        if(window_should_close())
+            break;
+        if(back_to_home)
+            break;
+        if(screen != SCREEN_SETTINGS)
+            break;
+        while(accum >= dt)
+            accum -= dt;
+
+        stars_update();
+        draw_settings();
+
+        timer_wait_for_frame(&game_timer);
+        window_swap_buffers();
+        window_mouse_update_actions();
+    }
+}
+
+void draw_settings()
+{
+    uint8_t r = background_color >> 16;
+    uint8_t g = background_color >> 8;
+    uint8_t b = background_color >> 0;
+
+    gfx_clear_buffer(r,g,b);
+
+    stars_draw();
+
+    int x = (view_width-200)/2.0;
+    int y = (view_height-200)/2.0;
+
+    //float menu_item_scale = 0.4;
+
+    //Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");
+    imgui_begin_panel("Settings", x,y, false);
+        //imgui_set_text_size(menu_item_scale);
+        imgui_text_box("Name", settings_name, 100);
+        imgui_color_picker("Color", &settings_color);
+        imgui_newline();
+        if(imgui_button("Return"))
+        {
+            screen = SCREEN_HOME;
+        }
+    imgui_end();
+}
+
+void run_game_start()
+{
+    bool is_client = (role == ROLE_CLIENT);
+
+    if(!is_client)
+    {
+        reset_game();
+        player = &players[0];
+    }
+
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
+    double curr_time = timer_get_time();
+    double new_time  = 0.0;
+    double accum = 0.0;
+    const double dt = 1.0/TARGET_FPS;
+
+
+    //TODO: put this in for loop, make net_client_connect() non blocking
+    if(is_client)
+    {
+        net_client_init();
+
+        int client_id = net_client_connect();
+        if(client_id < 0)
+            return;
+
+        LOGN("Client ID: %d", client_id);
+        player = &players[client_id];
+    }
+
+    memcpy(player->name, settings_name, 100*sizeof(char));
+    player->color = settings_color;
+    player_init_local();
+
+    initiate_game = false;
+
+    // loop
+    for(;;)
+    {
+        new_time = timer_get_time();
+        double frame_time = new_time - curr_time;
+        curr_time = new_time;
+        accum += frame_time;
+        window_poll_events();
+        if(window_should_close())
+            break;
+        if(back_to_home)
+        {
+            if(is_client)
+            {
+                net_client_disconnect();
+            }
+            break;
+        }
+        if(initiate_game)
+        {
+            screen = SCREEN_GAME;
+            break;
+        }
+        while(accum >= dt)
+            accum -= dt;
+
+
+        stars_update();
+        draw_game_start();
+
+        timer_wait_for_frame(&game_timer);
+        window_swap_buffers();
+        window_mouse_update_actions();
+    }
+}
+
+void draw_game_start()
+{
+    bool is_client = (role == ROLE_CLIENT);
+
+    uint8_t r = background_color >> 16;
+    uint8_t g = background_color >> 8;
+    uint8_t b = background_color >> 0;
+
+    gfx_clear_buffer(r,g,b);
+
+    stars_draw();
+
+    char* text = is_client ? "waiting..." : "press enter";
+
+    float title_scale = 1.0;
+    Vector2f title_size = gfx_string_get_size(title_scale, text);
+    gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR_BLUE, title_scale, 0.0, 1.0, true, true, text);
+}
+
+
+void run_game()
+{
+    bool is_client = (role == ROLE_CLIENT);
+
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
+    double curr_time = timer_get_time();
+    double new_time  = 0.0;
+    double accum = 0.0;
+    const double dt = 1.0/TARGET_FPS;
+
+    // loop
+    for(;;)
+    {
+        new_time = timer_get_time();
+        double frame_time = new_time - curr_time;
+        curr_time = new_time;
+        accum += frame_time;
+        window_poll_events();
+        if(window_should_close())
+            break;
+        if(back_to_home)
+            break;
+
+        if(is_client)
+        {
+            if(!net_client_is_connected())
+                break;
+        }
+
+        while(accum >= dt)
+        {
+            if(is_client)
+            {
+                net_client_update();
+                simulate_client(dt); // client-side prediction
+            }
+            else
+            {
+                simulate(dt);
+            }
+            accum -= dt;
+        }
+
+        draw_game();
+
+        timer_wait_for_frame(&game_timer);
+        window_swap_buffers();
+        window_mouse_update_actions();
+    }
+
+    screen = SCREEN_HOME;
+    if(is_client)
+    {
+        net_client_disconnect();
+    }
+
+}
+
+void draw_game()
 {
     uint8_t r = background_color >> 16;
     uint8_t g = background_color >> 8;
@@ -582,6 +722,16 @@ void draw()
         imgui_end();
     }
 }
+
+
+void run_server()
+{
+    deinit();
+    init_server();
+    net_server_start();
+}
+
+
 
 void stars_init()
 {
@@ -632,8 +782,11 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             }
             if(key == GLFW_KEY_ESCAPE)
             {
-                if(role != ROLE_UNKNOWN)
-                    back_to_menu = true;
+                if(screen != SCREEN_HOME)
+                {
+                    back_to_home = true;
+                    screen = SCREEN_HOME;
+                }
             }
             else if(key == GLFW_KEY_F2)
             {
@@ -643,6 +796,20 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             {
                 game_debug_enabled = !game_debug_enabled;
             }
+            else if(key == GLFW_KEY_ENTER)
+            {
+                if(screen == SCREEN_GAME_START && role == ROLE_LOCAL)
+                {
+                    initiate_game = true;
+                }
+                else if(screen == SCREEN_GAME_START && role == ROLE_CLIENT)
+                {
+                    printf("TEMP!\n");
+                    initiate_game = true;
+                }
+
+            }
+
         }
     }
 }
