@@ -111,6 +111,7 @@ static char* packet_type_to_str(PacketType type)
         case PACKET_TYPE_DISCONNECT: return "DISCONNECT";
         case PACKET_TYPE_PING: return "PING";
         case PACKET_TYPE_INPUT: return "INPUT";
+        case PACKET_TYPE_SETTINGS: return "SETTINGS";
         case PACKET_TYPE_STATE: return "STATE";
         case PACKET_TYPE_ERROR: return "ERROR";
         default: return "UNKNOWN";
@@ -442,6 +443,39 @@ static void server_send(PacketType type, ClientInfo* cli)
             pkt.data[0] = (uint8_t)cli->last_packet_error;
             net_send(&server.info,&cli->address,&pkt);
             break;
+        case PACKET_TYPE_SETTINGS:
+
+            int index = 1;
+            int num_clients = 0;
+
+            for(int i = 0; i < MAX_CLIENTS; ++i)
+            {
+                if(server.clients[i].state == CONNECTED)
+                {
+                    pkt.data[index] = (uint8_t)i;
+                    index += 1;
+
+                    memcpy(&pkt.data[index],&players[i].color,sizeof(uint32_t)); // color
+                    index += sizeof(uint32_t);
+
+                    uint8_t namelen = (uint8_t)MIN(PLAYER_NAME_MAX,strlen(players[i].name));
+
+                    pkt.data[index] = namelen; // namelen
+                    index += 1;
+
+                    memcpy(&pkt.data[index],players[i].name,namelen*sizeof(char)); // name
+                    index += namelen*sizeof(char);
+
+                    num_clients++;
+                }
+            }
+
+            pkt.data[0] = num_clients;
+            pkt.data_len = index;
+
+            net_send(&server.info,&cli->address,&pkt);
+
+            break;
         case PACKET_TYPE_DISCONNECT:
         {
             cli->state = DISCONNECTED;
@@ -647,6 +681,26 @@ int net_server_start()
 
                             memcpy(&cli->net_player_inputs[cli->input_count++], &recv_pkt.data[index],sizeof(NetPlayerInput));
                         }
+                    } break;
+                    case PACKET_TYPE_SETTINGS:
+                    {
+                        uint32_t color = (recv_pkt.data[8]<<24) | (recv_pkt.data[9] <<16) | (recv_pkt.data[10]<<8) | (recv_pkt.data[11]);
+                        LOGN("Received Settings, color: %u", color);
+                        uint8_t namelen = recv_pkt.data[12];
+
+                        players[cli->client_id].color = color;
+                        memcpy(players[cli->client_id].name,&recv_pkt.data[13],MIN(PLAYER_NAME_MAX, namelen)*sizeof(char));
+
+                        for(int i = 0; i < MAX_CLIENTS; ++i)
+                        {
+                            ClientInfo* cli = &server.clients[i];
+
+                            if(cli == NULL) continue;
+                            if(cli->state != CONNECTED) continue;
+
+                            server_send(PACKET_TYPE_SETTINGS,cli);
+                        }
+                        
                     } break;
                     case PACKET_TYPE_PING:
                     {
@@ -880,6 +934,26 @@ static void client_send(PacketType type)
             }
             pkt.data_len = 9+(input_count*sizeof(NetPlayerInput));
             circbuf_add(&client.input_packets,&pkt);
+            net_send(&client.info,&server.address,&pkt);
+            break;
+        case PACKET_TYPE_SETTINGS:
+            memcpy(&pkt.data[0],(uint8_t*)client.xor_salts,8);
+
+            // SETTINGS...
+            // color
+            //memcpy(&pkt.data[8],&player->color, sizeof(uint32_t));
+            uint8_t* cp = (uint8_t*)&player->color;
+            pkt.data[8]  = cp[0];
+            pkt.data[9]  = cp[1];
+            pkt.data[10] = cp[2];
+            pkt.data[11] = cp[3];
+
+            // name
+            uint8_t namelen = (uint8_t)strlen(player->name);
+            pkt.data[12] = namelen;
+            memcpy(&pkt.data[13], player->name,namelen*sizeof(char));
+            pkt.data_len = 13+namelen;
+
             net_send(&client.info,&server.address,&pkt);
             break;
         case PACKET_TYPE_DISCONNECT:
@@ -1189,6 +1263,38 @@ void net_client_update()
                     player_count = num_players;
 
                 } break;
+                case PACKET_TYPE_SETTINGS:
+                {
+                    uint8_t num_players = (uint8_t)srvpkt.data[0];
+
+                    int index = 1;
+
+                    for(int i = 0; i < num_players; ++i)
+                    {
+                        uint8_t client_id = srvpkt.data[index];
+                        index += 1;
+
+                        //LOGN("  %d: Client ID %d", i, client_id);
+
+                        if(client_id >= MAX_CLIENTS)
+                        {
+                            LOGE("Client ID is too large: %d",client_id);
+                            break;
+                        }
+
+                        Player* p = &players[client_id];
+
+                        p->color = (uint32_t)((srvpkt.data[index+0]<<24)|(srvpkt.data[index+1]<<16)|(srvpkt.data[index+2]<<8)|(srvpkt.data[index+3]));
+                        index += sizeof(uint32_t);
+
+                        uint8_t namelen = MIN(PLAYER_NAME_MAX, srvpkt.data[index]);
+                        index += 1;
+
+                        memcpy(&p->name, &srvpkt.data[index],namelen*sizeof(char)); // name
+                        index += namelen*sizeof(char);
+                    }
+
+                } break;
                 case PACKET_TYPE_PING:
                 {
                     client.time_of_last_received_ping = timer_get_time();
@@ -1234,6 +1340,11 @@ void net_client_disconnect()
         client_send(PACKET_TYPE_DISCONNECT);
         client.state = DISCONNECTED;
     }
+}
+
+void net_client_send_settings()
+{
+    client_send(PACKET_TYPE_SETTINGS);
 }
 
 int net_client_send(uint8_t* data, uint32_t len)

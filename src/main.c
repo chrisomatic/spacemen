@@ -29,7 +29,7 @@ Rect world_box = {0};
 // Settings
 uint32_t background_color = 0x00303030;
 int menu_selected_option = 0;
-char settings_name[100] = {0};
+char settings_name[PLAYER_NAME_MAX+1] = {0};
 uint32_t settings_color = 0xFFFFFFFF;
 
 Vector2i stars[1000] = {0};
@@ -181,7 +181,6 @@ void parse_args(int argc, char* argv[])
         }
     }
 }
-
 
 void init()
 {
@@ -538,8 +537,14 @@ void run_game_start()
         player = &players[client_id];
     }
 
-    memcpy(player->name, settings_name, 100*sizeof(char));
+    memcpy(player->name, settings_name, PLAYER_NAME_MAX*sizeof(char));
     player->color = settings_color;
+
+    if(is_client)
+    {
+        net_client_send_settings();
+    }
+
     player_init_local();
 
     initiate_game = false;
@@ -709,8 +714,6 @@ void run_server()
     init_server();
     net_server_start();
 }
-
-
 
 void stars_init()
 {

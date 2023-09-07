@@ -4,6 +4,7 @@
 #include "net.h"
 
 #define MAX_PLAYERS 8
+#define PLAYER_NAME_MAX 16
 
 #define MAX_ENERGY  300
 
@@ -53,7 +54,7 @@ typedef struct
     bool force_field;
 
     // Settings
-    char name[100];
+    char name[PLAYER_NAME_MAX+1];
     uint32_t color;
 
     PlayerAction actions[PLAYER_ACTION_MAX];

@@ -27,6 +27,7 @@ typedef enum
     PACKET_TYPE_DISCONNECT,
     PACKET_TYPE_PING,
     PACKET_TYPE_INPUT,
+    PACKET_TYPE_SETTINGS,
     PACKET_TYPE_STATE,
     PACKET_TYPE_ERROR,
 } PacketType;
@@ -123,6 +124,7 @@ bool net_client_set_server_ip(char* address);
 void net_client_get_server_ip_str(char* ip_str);
 bool net_client_data_waiting();
 double net_client_get_rtt();
+void net_client_send_settings();
 int net_client_send(uint8_t* data, uint32_t len);
 int net_client_recv(Packet* pkt);
 void net_client_deinit();

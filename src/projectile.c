@@ -168,7 +168,6 @@ void projectile_handle_collisions(float delta_t)
             bool hit = are_rects_colliding(&p->hit_box_prior, &p->hit_box, &players[j].hit_box);
             if(hit)
             {
-                printf("player %d got hit!\n", j);
                 player_hurt(&players[j], p->damage);
                 p->dead = true;
                 break;
