@@ -33,6 +33,7 @@ extern Projectile projectiles[MAX_PROJECTILES];
 extern glist* plist;
 
 void projectile_init();
+void projectile_clear_all();
 void projectile_add(Player* p, float angle_offset);
 void projectile_update_hit_box(Projectile* proj);
 void projectile_lerp(Projectile* p, double delta_t);

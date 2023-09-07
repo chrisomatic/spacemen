@@ -44,6 +44,7 @@ void init();
 void init_server();
 void deinit();
 void start_menu();
+void reset_game();
 void start();
 void start_server();
 void simulate(double);
@@ -194,6 +195,16 @@ void start_menu()
     }
 }
 
+void reset_game()
+{
+    projectile_clear_all();
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        players[i].active = false;
+        player_init(&players[i]);
+    }
+}
+
 void start()
 {
     bool is_client = (role == ROLE_CLIENT);
@@ -202,11 +213,6 @@ void start()
     timer_begin(&game_timer);
 
     stars_init();
-
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        players[i].active = false;
-    }
 
     if(is_client)
     {
@@ -221,6 +227,7 @@ void start()
     }
     else
     {
+        reset_game();
         player = &players[0];
     }
 

@@ -194,13 +194,13 @@ void player_update(Player* p, double delta_t)
         if(!FEQ0(xa))
         {
             float xcomp = p->vel.x / cos(vel_angle);
-            p->vel.x = xcomp*cos(new_angle);
+            p->vel.x = xcomp*cos(new_angle)*0.8;
         }
 
         if(!FEQ0(ya))
         {
             float ycomp = p->vel.y / sin(vel_angle);
-            p->vel.y = ycomp*sin(new_angle);
+            p->vel.y = ycomp*sin(new_angle)*0.8;
         }
 
     }

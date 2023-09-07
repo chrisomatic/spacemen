@@ -32,6 +32,11 @@ void projectile_init()
     projectile_image = gfx_load_image("src/img/laser.png", false, false, 10, 3);
 }
 
+void projectile_clear_all()
+{
+    list_clear(plist);
+}
+
 void projectile_add(Player* p, float angle_offset)
 {
     Projectile proj = {0};
