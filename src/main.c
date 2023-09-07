@@ -134,27 +134,6 @@ int main(int argc, char* argv[])
                 break;
         }
 
-        // switch(role)
-        // {
-        //     case ROLE_UNKNOWN:
-        //         init();
-        //         stars_init();
-        //         run_home();
-        //         break;
-        //     case ROLE_LOCAL:
-        //         init();
-        //         start();
-        //         break;
-        //     case ROLE_CLIENT:
-        //         init();
-        //         start();
-        //         break;
-        //     case ROLE_SERVER:
-        //         deinit();
-        //         run_server();
-        //         break;
-        // }
-
         if(window_should_close())
             break;
     }

@@ -34,7 +34,7 @@ extern glist* plist;
 
 void projectile_init();
 void projectile_clear_all();
-void projectile_add(Player* p, float angle_offset);
+void projectile_add(Player* p, float angle_offset, float energy_usage);
 void projectile_update_hit_box(Projectile* proj);
 void projectile_lerp(Projectile* p, double delta_t);
 void projectile_update(float delta_t);

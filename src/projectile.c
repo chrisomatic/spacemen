@@ -37,11 +37,11 @@ void projectile_clear_all()
     list_clear(plist);
 }
 
-void projectile_add(Player* p, float angle_offset)
+void projectile_add(Player* p, float angle_offset, float energy_usage)
 {
     Projectile proj = {0};
 
-    float energy_usage = 10.0;
+    // float energy_usage = 10.0;
     if(p->energy < energy_usage) return;
     player_add_energy(p, -energy_usage);
 

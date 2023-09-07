@@ -228,9 +228,10 @@ void player_update(Player* p, double delta_t)
     }
 
     const float pcooldown = 0.1; //seconds
+    const float p_energy = 0.0;
     if(p->actions[PLAYER_ACTION_SHOOT].toggled_on)
     {
-        projectile_add(p, 0);
+        projectile_add(p, 0, p_energy);
         p->proj_cooldown = pcooldown;
     }
     else if(p->actions[PLAYER_ACTION_SHOOT].state)
@@ -238,7 +239,7 @@ void player_update(Player* p, double delta_t)
         p->proj_cooldown -= delta_t;
         if(p->proj_cooldown <= 0.0)
         {
-            projectile_add(p, 0);
+            projectile_add(p, 0, p_energy);
             p->proj_cooldown = pcooldown;
         }
     }
