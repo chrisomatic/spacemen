@@ -103,7 +103,8 @@ int main(int argc, char* argv[])
     time_t t;
     srand((unsigned) time(&t));
 
-    init();
+    if(role != ROLE_SERVER)
+        init();
 
     for(;;)
     {
