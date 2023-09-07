@@ -793,6 +793,33 @@ void gfx_add_line(float x0, float y0, float x1, float y1, uint32_t color)
     num_line_points += 2;
 }
 
+void gfx_draw_lines()
+{
+    // Matrix* view = get_camera_transform();
+
+    glUseProgram(program_line);
+
+    glUniformMatrix4fv(loc_line_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
+    glUniformMatrix4fv(loc_line_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+
+    glUniform1f(loc_line_opacity,1.0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, num_line_points*sizeof(LinePoint), line_points);
+
+    glBindVertexArray(line_vao);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
+    glDrawArrays(GL_LINES,0,num_line_points);//,GL_UNSIGNED_INT,0);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+
+    glUseProgram(0);
+
+}
+
 void gfx_draw_rect(Rect* r, uint32_t color, float rotation, float scale, float opacity, bool filled, bool in_world)
 {
     gfx_draw_rect_xywh(r->x, r->y, r->w, r->h, color, rotation, scale, opacity, filled, in_world);
