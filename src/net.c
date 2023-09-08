@@ -820,6 +820,12 @@ uint8_t net_client_get_player_count()
     return client.player_count;
 }
 
+ConnectionState net_client_get_state()
+{
+    return client.state;
+}
+
+
 uint16_t net_client_get_latest_local_packet_id()
 {
     return client.info.local_latest_packet_id;
@@ -1048,6 +1054,7 @@ int net_client_connect()
                     case PACKET_TYPE_CONNECT_REJECTED:
                     {
                         LOGN("Rejection Reason: %s (%02X)", connect_reject_reason_to_str(srvpkt.data[0]), srvpkt.data[0]);
+                        client.state = DISCONNECTED; // TODO: is this okay?
                     } break;
                 }
             }
@@ -1055,6 +1062,75 @@ int net_client_connect()
             timer_delay_us(1000); // delay 1000 us
         }
     }
+}
+
+void net_client_connect_request()
+{
+    client.state = SENDING_CONNECTION_REQUEST;
+    client_send(PACKET_TYPE_CONNECT_REQUEST);
+}
+
+// 0: no data waiting
+// 1: timeout
+// 2: got data
+int net_client_connect_data_waiting()
+{
+    bool data_waiting = net_client_data_waiting();
+
+    if(!data_waiting)
+    {
+        double time_elapsed = timer_get_time() - client.time_of_latest_sent_packet;
+        if(time_elapsed >= DEFAULT_TIMEOUT)
+        {
+            client.state = DISCONNECTED; //TODO
+            return 1;
+        }
+
+        return 0;
+    }
+
+    return 2;
+}
+
+int net_client_connect_recv_data()
+{
+    Packet srvpkt = {0};
+    int recv_bytes = net_client_recv(&srvpkt);
+    if(recv_bytes > 0)
+    {
+        switch(srvpkt.hdr.type)
+        {
+            case PACKET_TYPE_CONNECT_CHALLENGE:
+            {
+                uint8_t srv_client_salt[8] = {0};
+                memcpy(srv_client_salt, &srvpkt.data[0],8);
+
+                if(memcmp(srv_client_salt,client.client_salt,8) != 0)
+                {
+                    LOGN("Server sent client salt doesn't match actual client salt");
+                    return -1;
+                }
+
+                memcpy(client.server_salt,&srvpkt.data[8], 8);
+                LOGN("Received Connect Challenge.");
+
+                client.state = SENDING_CHALLENGE_RESPONSE;
+                client_send(PACKET_TYPE_CONNECT_CHALLENGE_RESP);
+            } break;
+            case PACKET_TYPE_CONNECT_ACCEPTED:
+            {
+                client.state = CONNECTED;
+                uint8_t client_id = (uint8_t)srvpkt.data[0];
+                return (int)client_id;
+            } break;
+            case PACKET_TYPE_CONNECT_REJECTED:
+            {
+                LOGN("Rejection Reason: %s (%02X)", connect_reject_reason_to_str(srvpkt.data[0]), srvpkt.data[0]);
+                client.state = DISCONNECTED; // TODO: is this okay?
+            } break;
+        }
+    }
+    return -2;
 }
 
 void net_client_update()

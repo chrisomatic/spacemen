@@ -113,8 +113,15 @@ int net_server_start();
 // Client
 bool net_client_init();
 int net_client_connect();
+
+void net_client_connect_request();
+int net_client_connect_data_waiting();
+int net_client_connect_recv_data();
+
+
 void net_client_update();
 uint8_t net_client_get_player_count();
+ConnectionState net_client_get_state();
 int net_client_get_input_count();
 uint16_t net_client_get_latest_local_packet_id();
 bool net_client_add_player_input(NetPlayerInput* input);

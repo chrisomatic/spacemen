@@ -12,6 +12,13 @@
 #include "net.h"
 #include "settings.h"
 
+
+/*
+TODO:
+1) handle disconnection from server
+
+*/
+
 // =========================
 // Global Vars
 // =========================
@@ -22,6 +29,8 @@ bool paused = false;
 bool debug_enabled = false;
 bool game_debug_enabled = false;
 bool initiate_game = false;
+
+int client_id = -1;
 
 Timer game_timer = {0};
 GameRole role;
@@ -522,35 +531,13 @@ void run_game_start()
 {
     bool is_client = (role == ROLE_CLIENT);
 
-    if(!is_client)
-    {
-        reset_game();
-        player = &players[0];
-    }
+    initiate_game = false;
+    client_id = -1;
 
-    //TODO: put this in for loop, make net_client_connect() non blocking
     if(is_client)
     {
         net_client_init();
-
-        int client_id = net_client_connect();
-        if(client_id < 0)
-            return;
-
-        LOGN("Client ID: %d", client_id);
-        player = &players[client_id];
     }
-
-    memcpy(&player->settings, &menu_settings, sizeof(Settings));
-
-    if(is_client)
-    {
-        net_client_send_settings();
-    }
-
-    player_init_local();
-
-    initiate_game = false;
 
     run_loop(SCREEN_GAME_START, update_game_start, draw_game_start);
 
@@ -560,13 +547,70 @@ void run_game_start()
 
 void update_game_start(float _dt, bool is_client)
 {
-    if(initiate_game)
+
+    stars_update();
+
+    if(!is_client && initiate_game)
     {
+        reset_game();
+        player = &players[0];
+
+        memcpy(&player->settings, &menu_settings, sizeof(Settings));
+        player_init_local();
+
         screen = SCREEN_GAME;
         return;
     }
 
-    stars_update();
+    if(is_client)
+    {
+        if(client_id == -1)
+        {
+
+            if(net_client_get_state() == DISCONNECTED)
+            {
+                net_client_connect_request();
+            }
+            else
+            {
+                int rc = net_client_connect_data_waiting();
+
+                if(rc == 0)
+                {
+                    return;
+                }
+                else if(rc == 1)
+                {
+                    return;
+                }
+                else if(rc == 2)
+                {
+                    int _id = net_client_connect_recv_data();
+                    if(_id >= 0)
+                    {
+                        client_id = _id;
+                    }
+                }
+            }
+
+        }
+
+        if(client_id != -1)
+        {
+            LOGN("Client ID: %d", client_id);
+            player = &players[client_id];
+
+            memcpy(&player->settings, &menu_settings, sizeof(Settings));
+            player_init_local();
+
+            net_client_send_settings();
+
+            screen = SCREEN_GAME;
+            return;
+        }
+
+    }
+
 }
 
 void draw_game_start(bool is_client)
@@ -579,7 +623,21 @@ void draw_game_start(bool is_client)
 
     stars_draw();
 
-    char* text = is_client ? "waiting..." : "press enter";
+
+    char* text = "press enter";
+
+    if(is_client)
+    {
+        if(net_client_get_state() == DISCONNECTED)
+        {
+            text = "sending connect...";
+        }
+        else
+        {
+            text = "waiting...";
+        }
+    }
+    printf("text: %s\n", text);
 
     float title_scale = 1.0;
     Vector2f title_size = gfx_string_get_size(title_scale, text);
@@ -600,6 +658,11 @@ void update_game(float _dt, bool is_client)
     {
         net_client_update();
         simulate_client(_dt); // client-side prediction
+
+        if(!net_client_is_connected())
+        {
+            screen = SCREEN_HOME;
+        }
     }
     else
     {
@@ -728,11 +791,11 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
                 {
                     initiate_game = true;
                 }
-                else if(screen == SCREEN_GAME_START && role == ROLE_CLIENT)
-                {
-                    printf("TEMP!\n");
-                    initiate_game = true;
-                }
+                // else if(screen == SCREEN_GAME_START && role == ROLE_CLIENT)
+                // {
+                //     printf("TEMP!\n");
+                //     initiate_game = true;
+                // }
 
             }
 
