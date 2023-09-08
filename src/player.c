@@ -56,11 +56,13 @@ void player_init_local2()
 
 void player_init(Player* p)
 {
-    //if(role != ROLE_SERVER)
-    //{
-        if(player_image == -1)
-            player_image = gfx_load_image("src/img/spaceship.png", false, false, 32, 32);
-    //}
+
+    if(player_image == -1)
+    {
+        printf("loading player image\n");
+        player_image = gfx_load_image("src/img/spaceship.png", false, false, 32, 32);
+        printf("player_image: %d\n", player_image);
+    }
 
     memset(p,0, sizeof(Player));
 
@@ -309,7 +311,7 @@ void player_hurt(Player* p, float damage)
 void player_draw(Player* p)
 {
     if(!p->active) return;
-    gfx_draw_image(player_image, p->settings.sprite_index, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, true, true);
+    gfx_draw_image(player_image, p->settings.sprite_index, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
 
 
     if(p->force_field)

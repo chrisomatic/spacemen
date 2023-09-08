@@ -1299,6 +1299,7 @@ static int assign_image(GFXImageData image, bool linear_filter, int element_widt
 
         int start_x = (i % num_cols) * img.element_width;
         int start_y = (i / num_cols) * img.element_height;
+        // printf("start_x,y: %d, %d\n", start_x, start_y);
 
         if(image.data != NULL)
         {
@@ -1355,6 +1356,9 @@ static int assign_image(GFXImageData image, bool linear_filter, int element_widt
             img.sprite_visible_rects[i].y = (float)(start_y+vr->y) / img.h;
             img.sprite_visible_rects[i].w = vr->w / img.w;
             img.sprite_visible_rects[i].h = vr->h / img.h;
+
+            // printf("element: %d\n", i);
+            // print_rect(vr);
 
             img.sprite_rects[i].x = (float)(start_x+img.element_width/2.0) / img.w;
             img.sprite_rects[i].y = (float)(start_y+img.element_height/2.0) / img.h;
