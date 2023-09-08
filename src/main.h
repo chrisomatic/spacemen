@@ -13,6 +13,7 @@
 #include "log.h"
 #include "timer.h"
 #include "math2d.h"
+#include "settings.h"
 
 typedef enum
 {
@@ -49,6 +50,7 @@ extern bool game_debug_enabled;
 extern Timer game_timer;
 extern GameRole role;
 extern Rect world_box;
+extern Settings menu_settings;
 
 bool is_in_world(Rect* r);
 Vector2f limit_rect_pos(Rect* limit, Rect* rect);

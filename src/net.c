@@ -455,15 +455,15 @@ static void server_send(PacketType type, ClientInfo* cli)
                     pkt.data[index] = (uint8_t)i;
                     index += 1;
 
-                    memcpy(&pkt.data[index],&players[i].color,sizeof(uint32_t)); // color
+                    memcpy(&pkt.data[index],&players[i].settings.color,sizeof(uint32_t)); // color
                     index += sizeof(uint32_t);
 
-                    uint8_t namelen = (uint8_t)MIN(PLAYER_NAME_MAX,strlen(players[i].name));
+                    uint8_t namelen = (uint8_t)MIN(PLAYER_NAME_MAX,strlen(players[i].settings.name));
 
                     pkt.data[index] = namelen; // namelen
                     index += 1;
 
-                    memcpy(&pkt.data[index],players[i].name,namelen*sizeof(char)); // name
+                    memcpy(&pkt.data[index],players[i].settings.name,namelen*sizeof(char)); // name
                     index += namelen*sizeof(char);
 
                     num_clients++;
@@ -688,8 +688,8 @@ int net_server_start()
                         LOGN("Received Settings, color: %u", color);
                         uint8_t namelen = recv_pkt.data[12];
 
-                        players[cli->client_id].color = color;
-                        memcpy(players[cli->client_id].name,&recv_pkt.data[13],MIN(PLAYER_NAME_MAX, namelen)*sizeof(char));
+                        players[cli->client_id].settings.color = color;
+                        memcpy(players[cli->client_id].settings.name,&recv_pkt.data[13],MIN(PLAYER_NAME_MAX, namelen)*sizeof(char));
 
                         for(int i = 0; i < MAX_CLIENTS; ++i)
                         {
@@ -941,17 +941,16 @@ static void client_send(PacketType type)
 
             // SETTINGS...
             // color
-            //memcpy(&pkt.data[8],&player->color, sizeof(uint32_t));
-            uint8_t* cp = (uint8_t*)&player->color;
+            uint8_t* cp = (uint8_t*)&player->settings.color;
             pkt.data[8]  = cp[0];
             pkt.data[9]  = cp[1];
             pkt.data[10] = cp[2];
             pkt.data[11] = cp[3];
 
             // name
-            uint8_t namelen = (uint8_t)strlen(player->name);
+            uint8_t namelen = (uint8_t)strlen(player->settings.name);
             pkt.data[12] = namelen;
-            memcpy(&pkt.data[13], player->name,namelen*sizeof(char));
+            memcpy(&pkt.data[13], player->settings.name,namelen*sizeof(char));
             pkt.data_len = 13+namelen;
 
             net_send(&client.info,&server.address,&pkt);
@@ -1284,13 +1283,13 @@ void net_client_update()
 
                         Player* p = &players[client_id];
 
-                        p->color = (uint32_t)((srvpkt.data[index+0]<<24)|(srvpkt.data[index+1]<<16)|(srvpkt.data[index+2]<<8)|(srvpkt.data[index+3]));
+                        p->settings.color = (uint32_t)((srvpkt.data[index+0]<<24)|(srvpkt.data[index+1]<<16)|(srvpkt.data[index+2]<<8)|(srvpkt.data[index+3]));
                         index += sizeof(uint32_t);
 
                         uint8_t namelen = MIN(PLAYER_NAME_MAX, srvpkt.data[index]);
                         index += 1;
 
-                        memcpy(&p->name, &srvpkt.data[index],namelen*sizeof(char)); // name
+                        memcpy(&p->settings.name, &srvpkt.data[index],namelen*sizeof(char)); // name
                         index += namelen*sizeof(char);
                     }
 

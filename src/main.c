@@ -10,6 +10,7 @@
 #include "projectile.h"
 #include "player.h"
 #include "net.h"
+#include "settings.h"
 
 // =========================
 // Global Vars
@@ -29,8 +30,8 @@ Rect world_box = {0};
 // Settings
 uint32_t background_color = 0x00303030;
 int menu_selected_option = 0;
-char settings_name[PLAYER_NAME_MAX+1] = {0};
-uint32_t settings_color = 0xFFFFFFFF;
+
+Settings menu_settings = {0};
 
 Vector2i stars[1000] = {0};
 int stars_size[1000] = {0};
@@ -152,7 +153,6 @@ int main(int argc, char* argv[])
             break;
     }
 
-    printf("return\n");
     return 0;
 }
 
@@ -234,6 +234,9 @@ void init()
 
     LOGI(" - Projectile.");
     projectile_init();
+
+    LOGI(" - Settings.");
+    settings_load();
 
     stars_init();
 }
@@ -478,6 +481,7 @@ void draw_home(bool is_client)
 void run_settings()
 {
     run_loop(SCREEN_SETTINGS, update_settings, draw_settings);
+    settings_save();
 }
 
 void update_settings(float _dt, bool is_client)
@@ -503,8 +507,9 @@ void draw_settings(bool is_client)
     //Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");
     imgui_begin_panel("Settings", x,y, false);
         //imgui_set_text_size(menu_item_scale);
-        imgui_text_box("Name", settings_name, 100);
-        imgui_color_picker("Color", &settings_color);
+        imgui_text_box("Name", menu_settings.name, 100);
+        imgui_color_picker("Color", &menu_settings.color);
+        imgui_number_box("Sprite Index", 0, 255, &menu_settings.sprite_index);
         imgui_newline();
         if(imgui_button("Return"))
         {
@@ -536,8 +541,7 @@ void run_game_start()
         player = &players[client_id];
     }
 
-    memcpy(player->name, settings_name, PLAYER_NAME_MAX*sizeof(char));
-    player->color = settings_color;
+    memcpy(&player->settings, &menu_settings, sizeof(Settings));
 
     if(is_client)
     {

@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include "net.h"
+#include "settings.h"
 
 #define MAX_PLAYERS 8
 #define PLAYER_NAME_MAX 16
@@ -53,9 +54,7 @@ typedef struct
 
     bool force_field;
 
-    // Settings
-    char name[PLAYER_NAME_MAX+1];
-    uint32_t color;
+    Settings settings;
 
     PlayerAction actions[PLAYER_ACTION_MAX];
 

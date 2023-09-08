@@ -14,8 +14,11 @@ gcc core/gfx.c \
     core/socket.c \
     player.c \
     net.c \
+    settings.c \
     projectile.c \
     main.c \
     -Icore \
-    -lglfw -lGLU -lGLEW -lGL -lm -O2 \
+    -lglfw -lGLU -lGLEW -lGL -lm \
     -o ../bin/spacemen
+    
+    #-lglfw -lGLU -lGLEW -lGL -lm -O2 \
