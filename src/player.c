@@ -59,7 +59,7 @@ void player_init(Player* p)
     //if(role != ROLE_SERVER)
     //{
         if(player_image == -1)
-            player_image = gfx_load_image("src/img/spaceship.png", false, true, 32, 32);
+            player_image = gfx_load_image("src/img/spaceship.png", false, false, 32, 32);
     //}
 
     memset(p,0, sizeof(Player));

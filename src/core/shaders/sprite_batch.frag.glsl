@@ -20,6 +20,14 @@ void main() {
     if(tex_color == vec4(1.0,0.0,1.0,1.0))
         discard;
 
+    // replace red pixels with color0
+    //vec4 new_color = vec4(tex_color.r,tex_color.g,tex_color.b,tex_color.a);
+    if(tex_color.r > 0.0 && tex_color.g == 0.0 && tex_color.b == 0.00)
+    {
+        float amount = tex_color.r / 1.0;
+        tex_color = vec4(color0.r * amount, color0.g * amount, color0.b * amount, tex_color.a);
+    }
+
     vec3 total_diffuse = vec3(0.0);
 
     // point lights
@@ -36,13 +44,14 @@ void main() {
 
     vec4 my_color;
 
+
     if(ignore_light0 == uint(1))
     {
-        my_color = vec4(tex_color.rgb*color0,tex_color.a*opacity0);
+        my_color = vec4(tex_color.rgb,tex_color.a*opacity0);
     }
     else
     {
-        my_color = vec4(total_diffuse*color0, opacity0)*tex_color;
+        my_color = vec4(total_diffuse, opacity0)*tex_color;
     }
 
     my_color.rgb *= my_color.a;
