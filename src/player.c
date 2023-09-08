@@ -21,7 +21,6 @@ void player_init_local()
     window_controls_add_key(&player->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_F);
-    // window_controls_add_key(&player->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F3);
     window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
     window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
 
@@ -308,11 +307,16 @@ void player_draw(Player* p)
         float y1 = y0 + p->vel.y;
 
         gfx_add_line(x0, y0, x1, y1, COLOR_RED);
+
+        if(p == player)
+        {
+            Vector2f l = gfx_draw_string(10.0, view_height-30.0, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->vel.x, p->vel.y);
+            gfx_draw_string(10.0, view_height-30.0+l.y, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->pos.x, p->pos.y);
+        }
     }
 
     if(p == player)
     {
-
         // draw hp
         float hp_bar_width  = view_width/2.0;
         float red_width = hp_bar_width*(p->hp/p->hp_max);
@@ -329,10 +333,6 @@ void player_draw(Player* p)
         // draw energy
         float energy_width = hp_bar_width*(p->energy/MAX_ENERGY);
         gfx_draw_rect_xywh(hp_bar_x + energy_width/2.0 - hp_bar_width/2.0, hp_bar_y + hp_bar_height - 5.0, energy_width, hp_bar_height/4.0, COLOR_YELLOW, 0.0,1.0,0.4,true,false);
-
-
-        Vector2f l = gfx_draw_string(10.0, view_height-30.0, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->vel.x, p->vel.y);
-        gfx_draw_string(10.0, view_height-30.0+l.y, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->pos.x, p->pos.y);
     }
     else
     {

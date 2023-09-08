@@ -56,6 +56,9 @@ typedef struct
 MenuKeys menu_keys_prior = {0};
 MenuKeys menu_keys = {0};
 
+typedef void (*loop_update_func)(float _dt, bool is_client);
+typedef void (*loop_draw_func)(bool is_client);
+
 
 // =========================
 // Function Prototypes
@@ -71,14 +74,24 @@ void reset_game();
 void simulate(double);
 void simulate_client(double);
 
+void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _draw);
+
 void run_home();
-void draw_home();
+void update_home(float _dt, bool is_client);
+void draw_home(bool is_client);
+
 void run_settings();
-void draw_settings();
+void update_settings(float _dt, bool is_client);
+void draw_settings(bool is_client);
+
 void run_game_start();
-void draw_game_start();
+void update_game_start(float _dt, bool is_client);
+void draw_game_start(bool is_client);
+
 void run_game();
-void draw_game();
+void update_game(float _dt, bool is_client);
+void draw_game(bool is_client);
+
 void run_server();
 
 void stars_init();
@@ -111,8 +124,8 @@ int main(int argc, char* argv[])
 
         if(back_to_home)
         {
-            role = ROLE_UNKNOWN;
             back_to_home = false;
+            role = ROLE_UNKNOWN;
             screen = SCREEN_HOME;
         }
 
@@ -305,13 +318,9 @@ void simulate_client(double dt)
 
 }
 
-
-void run_home()
+void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _draw)
 {
-    window_controls_clear_keys();
-    window_controls_add_key(&menu_keys.up,    GLFW_KEY_W);
-    window_controls_add_key(&menu_keys.down,  GLFW_KEY_S);
-    window_controls_add_key(&menu_keys.enter, GLFW_KEY_ENTER);
+    bool is_client = (role == ROLE_CLIENT);
 
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
@@ -320,6 +329,8 @@ void run_home()
     double accum = 0.0;
     const double dt = 1.0/TARGET_FPS;
 
+    back_to_home = false;
+
     // loop
     for(;;)
     {
@@ -327,26 +338,48 @@ void run_home()
         double frame_time = new_time - curr_time;
         curr_time = new_time;
         accum += frame_time;
+
         window_poll_events();
         if(window_should_close())
             break;
-        if(role != ROLE_UNKNOWN)
-            break;
-        if(screen != SCREEN_HOME)
-            break;
-        while(accum >= dt)
-            accum -= dt;
 
-        stars_update();
-        draw_home();
+        if(back_to_home)
+            break;
+
+        if(screen != _screen)
+            break;
+
+        while(accum >= dt)
+        {
+            if(_update != NULL) _update(dt, is_client);
+            accum -= dt;
+        }
+        if(_draw != NULL) _draw(is_client);
 
         timer_wait_for_frame(&game_timer);
         window_swap_buffers();
         window_mouse_update_actions();
     }
+
 }
 
-void draw_home()
+
+void run_home()
+{
+    window_controls_clear_keys();
+    window_controls_add_key(&menu_keys.up,    GLFW_KEY_W);
+    window_controls_add_key(&menu_keys.down,  GLFW_KEY_S);
+    window_controls_add_key(&menu_keys.enter, GLFW_KEY_ENTER);
+
+    run_loop(SCREEN_HOME, update_home, draw_home);
+}
+
+void update_home(float _dt, bool is_client)
+{
+    stars_update();
+}
+
+void draw_home(bool is_client)
 {
     uint8_t r = background_color >> 16;
     uint8_t g = background_color >> 8;
@@ -444,42 +477,15 @@ void draw_home()
 
 void run_settings()
 {
-    timer_set_fps(&game_timer,TARGET_FPS);
-    timer_begin(&game_timer);
-    double curr_time = timer_get_time();
-    double new_time  = 0.0;
-    double accum = 0.0;
-    const double dt = 1.0/TARGET_FPS;
-
-    back_to_home = false;
-
-    // loop
-    for(;;)
-    {
-        new_time = timer_get_time();
-        double frame_time = new_time - curr_time;
-        curr_time = new_time;
-        accum += frame_time;
-        window_poll_events();
-        if(window_should_close())
-            break;
-        if(back_to_home)
-            break;
-        if(screen != SCREEN_SETTINGS)
-            break;
-        while(accum >= dt)
-            accum -= dt;
-
-        stars_update();
-        draw_settings();
-
-        timer_wait_for_frame(&game_timer);
-        window_swap_buffers();
-        window_mouse_update_actions();
-    }
+    run_loop(SCREEN_SETTINGS, update_settings, draw_settings);
 }
 
-void draw_settings()
+void update_settings(float _dt, bool is_client)
+{
+    stars_update();
+}
+
+void draw_settings(bool is_client)
 {
     uint8_t r = background_color >> 16;
     uint8_t g = background_color >> 8;
@@ -517,14 +523,6 @@ void run_game_start()
         player = &players[0];
     }
 
-    timer_set_fps(&game_timer,TARGET_FPS);
-    timer_begin(&game_timer);
-    double curr_time = timer_get_time();
-    double new_time  = 0.0;
-    double accum = 0.0;
-    const double dt = 1.0/TARGET_FPS;
-
-
     //TODO: put this in for loop, make net_client_connect() non blocking
     if(is_client)
     {
@@ -550,46 +548,25 @@ void run_game_start()
 
     initiate_game = false;
 
-    // loop
-    for(;;)
-    {
-        new_time = timer_get_time();
-        double frame_time = new_time - curr_time;
-        curr_time = new_time;
-        accum += frame_time;
-        window_poll_events();
-        if(window_should_close())
-            break;
-        if(back_to_home)
-        {
-            if(is_client)
-            {
-                net_client_disconnect();
-            }
-            break;
-        }
-        if(initiate_game)
-        {
-            screen = SCREEN_GAME;
-            break;
-        }
-        while(accum >= dt)
-            accum -= dt;
+    run_loop(SCREEN_GAME_START, update_game_start, draw_game_start);
 
-
-        stars_update();
-        draw_game_start();
-
-        timer_wait_for_frame(&game_timer);
-        window_swap_buffers();
-        window_mouse_update_actions();
-    }
+    if(screen != SCREEN_GAME)
+        net_client_disconnect();
 }
 
-void draw_game_start()
+void update_game_start(float _dt, bool is_client)
 {
-    bool is_client = (role == ROLE_CLIENT);
+    if(initiate_game)
+    {
+        screen = SCREEN_GAME;
+        return;
+    }
 
+    stars_update();
+}
+
+void draw_game_start(bool is_client)
+{
     uint8_t r = background_color >> 16;
     uint8_t g = background_color >> 8;
     uint8_t b = background_color >> 0;
@@ -608,64 +585,26 @@ void draw_game_start()
 
 void run_game()
 {
-    bool is_client = (role == ROLE_CLIENT);
+    run_loop(SCREEN_GAME, update_game, draw_game);
 
-    timer_set_fps(&game_timer,TARGET_FPS);
-    timer_begin(&game_timer);
-    double curr_time = timer_get_time();
-    double new_time  = 0.0;
-    double accum = 0.0;
-    const double dt = 1.0/TARGET_FPS;
-
-    // loop
-    for(;;)
-    {
-        new_time = timer_get_time();
-        double frame_time = new_time - curr_time;
-        curr_time = new_time;
-        accum += frame_time;
-        window_poll_events();
-        if(window_should_close())
-            break;
-        if(back_to_home)
-            break;
-
-        if(is_client)
-        {
-            if(!net_client_is_connected())
-                break;
-        }
-
-        while(accum >= dt)
-        {
-            if(is_client)
-            {
-                net_client_update();
-                simulate_client(dt); // client-side prediction
-            }
-            else
-            {
-                simulate(dt);
-            }
-            accum -= dt;
-        }
-
-        draw_game();
-
-        timer_wait_for_frame(&game_timer);
-        window_swap_buffers();
-        window_mouse_update_actions();
-    }
-
-    screen = SCREEN_HOME;
-    if(is_client)
-    {
-        net_client_disconnect();
-    }
-
+    net_client_disconnect();
 }
 
-void draw_game()
+void update_game(float _dt, bool is_client)
+{
+    if(is_client)
+    {
+        net_client_update();
+        simulate_client(_dt); // client-side prediction
+    }
+    else
+    {
+        simulate(_dt);
+    }
+}
+
+
+void draw_game(bool is_client)
 {
     uint8_t r = background_color >> 16;
     uint8_t g = background_color >> 8;
