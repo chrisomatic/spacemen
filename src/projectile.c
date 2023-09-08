@@ -178,7 +178,7 @@ void projectile_handle_collisions(float delta_t)
 
 void projectile_draw(Projectile* proj)
 {
-    gfx_draw_image(projectile_image, 0, proj->pos.x, proj->pos.y, COLOR_TINT_NONE, 1.0, proj->angle_deg, 1.0, true, true);
+    gfx_draw_image(projectile_image, 0, proj->pos.x, proj->pos.y, COLOR_RED, 1.0, proj->angle_deg, 1.0, true, true);
 
     if(game_debug_enabled)
     {

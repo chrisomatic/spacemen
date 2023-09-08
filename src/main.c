@@ -247,6 +247,8 @@ void init()
     LOGI(" - Settings.");
     settings_load();
 
+    imgui_load_theme("retro.theme");
+
     stars_init();
 }
 
