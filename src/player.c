@@ -27,6 +27,33 @@ void player_init_local()
     player->active = true;
 }
 
+void player_init_local2()
+{
+    Player* p = NULL;
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if(&players[i] == player)
+            continue;
+        if(players[i].active)
+            continue;
+        p = &players[i];
+        break;
+    }
+
+    if(p == NULL)
+        return;
+
+    window_controls_add_key(&p->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_UP);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_DOWN);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_LEFT);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_RIGHT);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_M);
+    memcpy(p->settings.name, "Jenger", strlen("Jenger"));
+    p->settings.color = COLOR_GREEN;
+    p->active = true;
+}
+
+
 void player_init(Player* p)
 {
     //if(role != ROLE_SERVER)
@@ -243,6 +270,9 @@ void player_update(Player* p, double delta_t)
         }
     }
 
+    // TEST
+    // player_hurt(p,0.1);
+
     float energy = 16.0*delta_t;
     player_add_energy(p, energy);
 
@@ -279,7 +309,8 @@ void player_hurt(Player* p, float damage)
 void player_draw(Player* p)
 {
     if(!p->active) return;
-    gfx_draw_image(player_image, 0, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, true, true);
+    gfx_draw_image(player_image, p->settings.sprite_index, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, true, true);
+
 
     if(p->force_field)
     {
@@ -318,26 +349,31 @@ void player_draw(Player* p)
     if(p == player)
     {
         // draw hp
-        float hp_bar_width  = view_width/2.0;
-        float red_width = hp_bar_width*(p->hp/p->hp_max);
-        float hp_bar_height = 15.0;
-        // float hp_bar_padding = 4.0;
-
-        float hp_bar_x = (view_width)/2.0;
-        float hp_bar_y = view_height-hp_bar_height-5.0;
-
-        gfx_draw_rect_xywh(hp_bar_x, hp_bar_y, hp_bar_width, hp_bar_height, COLOR_BLACK,0.0,1.0,0.7,true,false);
-        gfx_draw_rect_xywh(hp_bar_x + red_width/2.0 - hp_bar_width/2.0, hp_bar_y, red_width, hp_bar_height, 0x00CC0000,0.0,1.0,0.4,true,false);
-        gfx_draw_rect_xywh(hp_bar_x, hp_bar_y, hp_bar_width, hp_bar_height, COLOR_BLACK,0.0,1.0,0.7,false,false); // border
+        float hp_full_w  = view_width/2.0;
+        float hp_w = hp_full_w*(p->hp/p->hp_max);
+        float hp_h = 15.0;
+        float hp_x = (view_width - hp_full_w)/2.0;
+        float hp_y = view_height - hp_h - 20.0;
+        gfx_draw_rect_xywh_tl(hp_x-1, hp_y-1, hp_full_w+2, hp_h+2, COLOR_BLACK, 0.0,1.0,0.7, true, true);
+        gfx_draw_rect_xywh_tl(hp_x, hp_y, hp_w, hp_h, 0x00CC0000, 0.0,1.0,0.4, true, false);
 
         // draw energy
-        float energy_width = hp_bar_width*(p->energy/MAX_ENERGY);
-        gfx_draw_rect_xywh(hp_bar_x + energy_width/2.0 - hp_bar_width/2.0, hp_bar_y + hp_bar_height - 5.0, energy_width, hp_bar_height/4.0, COLOR_YELLOW, 0.0,1.0,0.4,true,false);
+        float energy_width = hp_full_w*(p->energy/MAX_ENERGY);
+        float pad = 3.0;
+        float energy_h = 4.0;
+        float energy_y = hp_y + hp_h + pad;
+        gfx_draw_rect_xywh_tl(hp_x-1, energy_y-1, hp_full_w+2, energy_h+2, COLOR_BLACK, 0.0,1.0,0.7, true, false);
+        gfx_draw_rect_xywh_tl(hp_x, energy_y, energy_width, energy_h, COLOR_YELLOW, 0.0,1.0,0.4, true, false);
     }
     else
     {
-        float hp_bar_width = 32*(p->hp/p->hp_max);
-        gfx_draw_rect_xywh(p->pos.x - 16 + hp_bar_width/2.0, p->pos.y-18, hp_bar_width, 2, 0x00CC0000,0.0,1.0,0.4,true,false);
+        GFXImage* img = &gfx_images[player_image];
+        float w = img->element_width;
+        float h = img->element_height;
+        float hp_w = w * (p->hp/p->hp_max);
+        float hp_x = p->pos.x - w/2.0;
+        float hp_y = p->pos.y + h/2.0 + 2.0;
+        gfx_draw_rect_xywh_tl(hp_x, hp_y, hp_w, 2, 0x00CC0000, 0.0,1.0,0.4, true, true);
     }
 }
 

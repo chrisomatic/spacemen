@@ -874,6 +874,19 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
     glUseProgram(0);
 }
 
+void gfx_draw_rect_tl(Rect* r, uint32_t color, float rotation, float scale, float opacity, bool filled, bool in_world)
+{
+    gfx_draw_rect_xywh_tl(r->x, r->y, r->w, r->h, color, rotation, scale, opacity, filled, in_world);
+}
+
+void gfx_draw_rect_xywh_tl(float x, float y, float w, float h, uint32_t color, float rotation, float scale, float opacity, bool filled, bool in_world)
+{
+    float _x = x+w/2.0;
+    float _y = y+h/2.0;
+    gfx_draw_rect_xywh(_x, _y, w, h, color, rotation, scale, opacity, filled, in_world);
+}
+
+
 void gfx_draw_circle(float x, float y, float radius, uint32_t color, float opacity, bool filled, bool in_world)
 {
     glUseProgram(program_shape);

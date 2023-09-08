@@ -518,7 +518,8 @@ void draw_settings(bool is_client)
         //imgui_set_text_size(menu_item_scale);
         imgui_text_box("Name", menu_settings.name, 100);
         imgui_color_picker("Color", &menu_settings.color);
-        imgui_number_box("Sprite Index", 0, 255, &menu_settings.sprite_index);
+        GFXImage* img = &gfx_images[player_image];
+        imgui_number_box("Sprite Index", 0, img->element_count-1, &menu_settings.sprite_index);
         imgui_newline();
         if(imgui_button("Return"))
         {
@@ -557,6 +558,7 @@ void update_game_start(float _dt, bool is_client)
 
         memcpy(&player->settings, &menu_settings, sizeof(Settings));
         player_init_local();
+        player_init_local2();
 
         screen = SCREEN_GAME;
         return;
@@ -637,7 +639,7 @@ void draw_game_start(bool is_client)
             text = "waiting...";
         }
     }
-    printf("text: %s\n", text);
+    // printf("text: %s\n", text);
 
     float title_scale = 1.0;
     Vector2f title_size = gfx_string_get_size(title_scale, text);

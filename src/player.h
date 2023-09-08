@@ -76,6 +76,7 @@ extern int player_image;
 
 void player_init(Player* p);
 void player_init_local();
+void player_init_local2();
 void player_update(Player* p, double delta_t);
 void player_add_energy(Player* p, float e);
 void player_update_hit_box(Player* p);
