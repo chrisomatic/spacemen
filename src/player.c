@@ -53,6 +53,13 @@ void player_init_local2()
     p->active = true;
 }
 
+void player_deactivate(int index)
+{
+    if(&players[index] == player)
+        return;
+    players[index].active = false;
+}
+
 
 void player_init(Player* p)
 {
@@ -70,10 +77,11 @@ void player_init(Player* p)
     p->pos.y = 100.0;
     p->vel.x = 0.0;
     p->vel.y = 0.0;
-    p->angle_deg = 0.0;
+    p->angle_deg = 90.0;
     p->accel_factor = 10.0;
     p->turn_rate = 5.0;
-    p->velocity_limit = 500.0;
+    // p->velocity_limit = 500.0;
+    p->velocity_limit = 50000.0;
     p->energy = MAX_ENERGY/2.0;
     p->force_field = false;
     p->hp_max = 100.0;
@@ -199,15 +207,13 @@ void player_update(Player* p, double delta_t)
 
         float x0 = p->pos.x;
         float y0 = p->pos.y;
-
         float x1 = x0 + p->vel.x;
         float y1 = y0 + p->vel.y;
-
         // could be useful to include in player struct
         float vel_angle = calc_angle_rad(x0, y0, x1, y1);
 
-        float xa = cos(vel_angle);
-        float ya = sin(vel_angle);
+        float xa = cosf(vel_angle);
+        float ya = sinf(vel_angle);
 
         float new_angle = 0;
         if(!FEQ0(adj.x))
@@ -221,13 +227,13 @@ void player_update(Player* p, double delta_t)
 
         if(!FEQ0(xa))
         {
-            float xcomp = p->vel.x / cos(vel_angle);
+            float xcomp = p->vel.x / xa;
             p->vel.x = xcomp*cos(new_angle)*0.8;
         }
 
         if(!FEQ0(ya))
         {
-            float ycomp = p->vel.y / sin(vel_angle);
+            float ycomp = p->vel.y / ya;
             p->vel.y = ycomp*sin(new_angle)*0.8;
         }
 
@@ -320,7 +326,6 @@ void player_draw(Player* p)
 
     gfx_draw_image(player_image, p->settings.sprite_index, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
 
-
     if(p->force_field)
     {
         gfx_draw_circle(p->pos.x, p->pos.y, p->hit_box.w+3, COLOR_BLUE, 0.2, true, true);
@@ -342,11 +347,14 @@ void player_draw(Player* p)
         // normalize(&vn);
         // float x1 = x0 + vn.x*50;
         // float y1 = y0 + vn.y*50;
-
         float x1 = x0 + p->vel.x;
         float y1 = y0 + p->vel.y;
-
         gfx_add_line(x0, y0, x1, y1, COLOR_RED);
+
+
+        x1 = x0 + 100*cosf(RAD(p->angle_deg));
+        y1 = y0 - 100*sinf(RAD(p->angle_deg));
+        gfx_add_line(x0, y0, x1, y1, COLOR_CYAN);
 
         if(p == player)
         {

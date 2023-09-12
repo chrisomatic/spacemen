@@ -56,8 +56,137 @@ void projectile_add(Player* p, float angle_offset, float energy_usage)
     proj.pos.y = p->pos.y;
     float angle = RAD(proj.angle_deg);
     float speed = 400.0;
-    proj.vel.x = (speed)*cosf(angle) + p->vel.x;
-    proj.vel.y = (speed)*sinf(angle) - p->vel.y;
+
+    // float x0 = p->pos.x;
+    // float y0 = p->pos.y;
+    // float x1 = x0 + p->vel.x;
+    // float y1 = y0 + p->vel.y;
+    // float vel_angle = calc_angle_rad(x0, y0, x1, y1);
+
+
+    // proj.vel.x = (speed)*cosf(angle) + p->vel.x;
+    // proj.vel.y = (speed)*sinf(angle) - p->vel.y;
+
+
+    // float vx0 = (speed)*cosf(angle);
+    // float vy0 = (speed)*sinf(angle);
+
+    // float min_speed = 10.0;
+
+    // proj.vel.x = vx0;
+    // proj.vel.y = vy0;
+
+    // if(!FEQ0(p->vel.x))
+    // {
+    //     float vx = vx0 + p->vel.x;
+    //     if(vx0 > 0 && vx < 0)
+    //     {
+    //         proj.vel.x = vx0;
+    //     }
+    //     else if(vx0 < 0 && vx > 0)
+    //     {
+    //         proj.vel.x = vx0;
+    //     }
+    //     else
+    //     {
+    //         proj.vel.x = vx;
+    //     }
+    // }
+    // if(!FEQ0(p->vel.y))
+    // {
+    //     float vy = vy0 - p->vel.y;
+    //     if(vy0 > 0 && vy < 0)
+    //     {
+    //         proj.vel.y = vy0;
+    //     }
+    //     else if(vy0 < 0 && vy > 0)
+    //     {
+    //         proj.vel.y = vy0;
+    //     }
+    //     else
+    //     {
+    //         proj.vel.y = vy;
+    //     }
+    // }
+
+
+
+
+    float min_speed = 100.0;
+
+    float vx0 = (speed)*cosf(angle);
+    float vy0 = (-speed)*sinf(angle);   // @minus
+
+    float vx = vx0 + p->vel.x;
+    float vy = vy0 + p->vel.y;
+
+    proj.vel.x = vx0;
+    proj.vel.y = vy0;
+
+    // handle angle
+    // -----------------------------------------------------------------------------------
+
+    // if(!FEQ0(p->vel.x))
+    {
+        if(vx0 > 0 && vx < 0)
+        {
+            // printf("x help 1\n");
+            proj.vel.x = (min_speed)*cosf(angle);
+        }
+        else if(vx0 < 0 && vx > 0)
+        {
+            // printf("x help 2\n");
+            proj.vel.x = (min_speed)*cosf(angle);
+        }
+        else
+        {
+            proj.vel.x = vx;
+        }
+    }
+    // if(!FEQ0(p->vel.y))
+    {
+        if(vy0 > 0 && vy < 0)
+        {
+            // printf("y help 1\n");
+            proj.vel.y = (-min_speed)*sinf(angle);  // @minus
+        }
+        else if(vy0 < 0 && vy > 0)
+        {
+            // printf("y help 2\n");
+            proj.vel.y = (-min_speed)*sinf(angle);  // @minus
+        }
+        else
+        {
+            // printf("help 3\n");
+            proj.vel.y = vy;
+        }
+    }
+
+    // handle minimum speed
+    // -----------------------------------------------------------------------------------
+    float a = calc_angle_rad(0,0,proj.vel.x, proj.vel.y);
+    float xa = cosf(a);
+    float ya = sinf(a);
+    float _speed = 0;
+    if(!FEQ0(xa))
+    {
+        _speed = proj.vel.x / xa;
+    }
+    else if(!FEQ0(ya))
+    {
+        _speed = proj.vel.y / ya;
+        _speed *= -1;   // @minus
+    }
+    if(_speed < min_speed)
+    {
+        // printf("min speed\n");
+        proj.vel.x = min_speed * xa;
+        proj.vel.y = -min_speed * ya;   //@minus
+    }
+
+
+
+
 
     proj.time = 0.0;
     proj.ttl  = 5.0;
@@ -101,7 +230,7 @@ void projectile_update(float delta_t)
         // proj->prior_pos.y = proj->pos.y;
 
         proj->pos.x += _dt*proj->vel.x;
-        proj->pos.y -= _dt*proj->vel.y; // @minus
+        proj->pos.y += _dt*proj->vel.y;
 
         projectile_update_hit_box(proj);
     }

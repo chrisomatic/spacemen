@@ -614,7 +614,7 @@ void update_game_start(float _dt, bool is_client)
 
         memcpy(&player->settings, &menu_settings, sizeof(Settings));
         player_init_local();
-        player_init_local2();
+        // player_init_local2();
 
         screen = SCREEN_GAME;
         return;
