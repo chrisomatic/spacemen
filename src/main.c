@@ -582,6 +582,9 @@ void draw_settings(bool is_client)
             screen = SCREEN_HOME;
         }
     imgui_end();
+
+    gfx_draw_image(player_image, menu_settings.sprite_index, view_width/2.0, 200, menu_settings.color, 3.0, 0.0, 1.0, true, true);
+
 }
 
 void run_game_start()
@@ -614,7 +617,7 @@ void update_game_start(float _dt, bool is_client)
 
         memcpy(&player->settings, &menu_settings, sizeof(Settings));
         player_init_local();
-        // player_init_local2();
+        player_init_local2();
 
         screen = SCREEN_GAME;
         return;
