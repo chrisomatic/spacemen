@@ -246,6 +246,7 @@ void init()
 
     LOGI(" - Settings.");
     settings_load();
+    memcpy(&player->settings, &menu_settings, sizeof(Settings));
 
     imgui_load_theme("retro.theme");
 
@@ -486,7 +487,60 @@ void draw_home(bool is_client)
     gfx_draw_string(x,y, menu_selected_option == 4 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Settings"); y += 32;
     gfx_draw_string(x,y, menu_selected_option == 5 ? COLOR_YELLOW : COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Exit"); y += 32;
 
-    gfx_draw_image(player_image, 0, x - 34,(view_height+100)/2.0 + (32*menu_selected_option) + 16, COLOR_TINT_NONE, 1.0, 0.0, 1.0, true, true);
+    float sel_x = x - 34;
+    float sel_y = (view_height+100)/2.0 + (32*menu_selected_option) + 16;
+
+    GFXImage* img = &gfx_images[player_image];
+    if(menu_settings.sprite_index >= img->element_count)
+    {
+        menu_settings.sprite_index = 0;
+    }
+
+    gfx_draw_image(player_image, menu_settings.sprite_index, sel_x, sel_y, menu_settings.color, 1.0, 0.0, 1.0, true, true);
+
+
+#if 0
+    {
+        // gfx_draw_string(view_width/2.0, 100, COLOR_BLACK, 0.4, 0.0, 1.0, true, false, "%.2f, %.2f", sel_x, sel_y);
+
+        // GFXImage* img = &gfx_images[player_image];
+        int sprite = 0;
+        float x = 100;
+        float y = 498;
+        float vw = img->visible_rects[sprite].w;
+        float vh = img->visible_rects[sprite].h;
+        printf("[0]\n");
+        gfx_draw_image(player_image, sprite, x,y, COLOR_TINT_NONE, 1.0, 0.0, 1.0, true, true);
+        printf("[1]\n");
+        gfx_draw_image(player_image, sprite, x+100,y+1, COLOR_TINT_NONE, 1.0, 0.0, 1.0, true, true);
+
+        if(game_debug_enabled)
+        {
+            gfx_draw_rect_xywh(x,y,vw,vh, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+            gfx_draw_rect_xywh(x,y,32,32, COLOR_RED, 0, 1.0, 1.0, false, true);
+            gfx_draw_rect_xywh(x,y,1,1, COLOR_GREEN, 0, 1.0, 1.0, false, true);
+        }
+
+        // for(int i = 0; i < 20; ++i)
+        // {
+        //     x += 32;
+        //     y += 1;
+        //     gfx_draw_image(player_image, sprite, x,y, COLOR_TINT_NONE, 1.0, 0.0, 1.0, false, true);
+        // }
+
+        // x += 100;
+        // y += 1;
+        // gfx_draw_image(player_image, sprite, x,y, COLOR_TINT_NONE, 1.0, 0.0, 1.0, false, true);
+        // if(game_debug_enabled)
+        // {
+        //     gfx_draw_rect_xywh(x,y,vw,vh, COLOR_BLUE, 0, 1.0, 1.0, false, true);
+        //     gfx_draw_rect_xywh(x,y,32,32, COLOR_RED, 0, 1.0, 1.0, false, true);
+        //     gfx_draw_rect_xywh(x,y,1,1, COLOR_GREEN, 0, 1.0, 1.0, false, true);
+        // }
+    }
+#endif
+
+
 }
 
 void run_settings()

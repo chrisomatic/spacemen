@@ -604,6 +604,13 @@ bool gfx_sprite_batch_add(int img_index, int sprite_index, float x, float y, uin
     sprite->rect.w = sr->w;
     sprite->rect.h = sr->h;
 
+    // if(img_index == 1)
+    // {
+    //     print_sprite(sprite);
+    //     // print_rect(&sprite->rect);
+    //     // print_rect(&img->sprite_visible_rects[sprite_index]);
+    // }
+
     // check sprite batch indices
     bool is_index_in_batch = false;
     for(int i = 0; i < sprite_batch.num_image_indices; ++i)
@@ -669,9 +676,9 @@ void gfx_sprite_batch_draw()
 
     glBindVertexArray(batch_vao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, batch_instance_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sprite_batch.num_sprites*sizeof(Sprite), &sprite_batch.sprites, GL_STREAM_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, batch_instance_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sprite_batch.num_sprites*sizeof(Sprite), &sprite_batch.sprites, GL_STREAM_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -1358,7 +1365,7 @@ static int assign_image(GFXImageData image, bool linear_filter, int element_widt
             img.sprite_visible_rects[i].h = vr->h / img.h;
 
             // printf("element: %d\n", i);
-            // print_rect(vr);
+            // print_rect(&img.sprite_visible_rects[i]);
 
             img.sprite_rects[i].x = (float)(start_x+img.element_width/2.0) / img.w;
             img.sprite_rects[i].y = (float)(start_y+img.element_height/2.0) / img.h;

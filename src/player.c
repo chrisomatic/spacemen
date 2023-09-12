@@ -59,7 +59,7 @@ void player_init(Player* p)
 
     if(player_image == -1)
     {
-        printf("loading player image\n");
+        // printf("loading player image\n");
         player_image = gfx_load_image("src/img/spaceship.png", false, false, 32, 32);
         printf("player_image: %d\n", player_image);
     }
@@ -311,6 +311,13 @@ void player_hurt(Player* p, float damage)
 void player_draw(Player* p)
 {
     if(!p->active) return;
+
+    GFXImage* img = &gfx_images[player_image];
+    if(p->settings.sprite_index >= img->element_count)
+    {
+        p->settings.sprite_index = 0;
+    }
+
     gfx_draw_image(player_image, p->settings.sprite_index, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
 
 
@@ -369,7 +376,6 @@ void player_draw(Player* p)
     }
     else
     {
-        GFXImage* img = &gfx_images[player_image];
         float w = img->element_width;
         float h = img->element_height;
         float hp_w = w * (p->hp/p->hp_max);
