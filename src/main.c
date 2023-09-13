@@ -10,8 +10,9 @@
 #include "projectile.h"
 #include "player.h"
 #include "net.h"
+#include "particles.h"
+#include "effects.h"
 #include "settings.h"
-
 
 /*
 TODO:
@@ -244,6 +245,12 @@ void init()
     LOGI(" - Projectile.");
     projectile_init();
 
+    LOGI(" - Particles.");
+    particles_init();
+
+    LOGI(" - Effects.");
+    effects_load_all();
+
     LOGI(" - Settings.");
     settings_load();
     memcpy(&player->settings, &menu_settings, sizeof(Settings));
@@ -251,7 +258,9 @@ void init()
     imgui_load_theme("retro.theme");
 
     stars_init();
+
 }
+
 
 void init_server()
 {
@@ -297,6 +306,7 @@ void simulate(double dt)
     if(!paused)
     {
         projectile_update(dt);
+        particles_update(dt);
         stars_update();
     }
 

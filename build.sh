@@ -12,10 +12,12 @@ gcc core/gfx.c \
     core/imgui.c \
     core/glist.c \
     core/socket.c \
+    core/particles.c \
     player.c \
     net.c \
     settings.c \
     projectile.c \
+    effects.c \
     main.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm \

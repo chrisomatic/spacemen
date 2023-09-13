@@ -4,6 +4,8 @@
 #include "player.h"
 #include "core/gfx.h"
 #include "core/window.h"
+#include "core/particles.h"
+#include "effects.h"
 
 Player players[MAX_PLAYERS] = {0};
 Player* player = &players[0];
@@ -12,6 +14,8 @@ int player_image = -1;
 int player_count = 1;
 
 static void player_reset(Player* p);
+
+ParticleSpawner* jet_spawner;
 
 void player_init_local()
 {
@@ -25,6 +29,13 @@ void player_init_local()
     window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
 
     player->active = true;
+
+    ParticleEffect firepit = {0};
+    memcpy(&firepit, &particle_effects[EFFECT_FIRE],sizeof(ParticleEffect));
+    firepit.spawn_radius_min = 5.0;
+    firepit.spawn_radius_max = 10.0;
+    jet_spawner = particles_spawn_effect(100,100, &firepit,0.0,true,false);
+
 }
 
 void player_init_local2()
@@ -196,6 +207,9 @@ void player_update(Player* p, double delta_t)
         player_reset(p);
     }
 
+    jet_spawner->pos.x = p->pos.x;
+    jet_spawner->pos.y = p->pos.y;
+
     player_update_hit_box(p);
 
     Vector2f adj = limit_rect_pos(&world_box, &p->hit_box);
@@ -334,6 +348,8 @@ void player_draw(Player* p)
     {
         gfx_draw_circle(p->pos.x, p->pos.y, p->hit_box.w+3, COLOR_BLUE, 0.2, true, true);
     }
+
+    //particles_draw_spawner(jet_spawner,true, false);
 
     float name_scale = 0.15;
     Vector2f title_size = gfx_string_get_size(name_scale, p->settings.name);
