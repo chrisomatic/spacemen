@@ -50,7 +50,7 @@ void player_init_local2()
     window_controls_add_key(&p->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_DOWN);
     window_controls_add_key(&p->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_LEFT);
     window_controls_add_key(&p->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_RIGHT);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_M);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_RIGHT_SHIFT);
     memcpy(p->settings.name, "Decker", strlen("Decker"));
     p->settings.color = COLOR_RED;
     p->settings.sprite_index = 3;

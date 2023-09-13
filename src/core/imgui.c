@@ -86,6 +86,8 @@ typedef struct
     int prior_mouse_x, prior_mouse_y;
     int mouse_x, mouse_y;
 
+    int slider_mouse_x, slider_mouse_y; //starting coords for adjusting slider
+
     PanelProps panel_props;
     TextBoxProps text_box_props;
 
@@ -198,6 +200,13 @@ void imgui_begin(char* name, int x, int y)
 
     ctx->prior_mouse_x = ctx->mouse_x;
     ctx->prior_mouse_y = ctx->mouse_y;
+
+    bool mouse_went_down = window_mouse_left_went_down();
+    if(mouse_went_down)
+    {
+        ctx->slider_mouse_x = ctx->mouse_x;
+        ctx->slider_mouse_y = ctx->mouse_y;
+    }
 
     window_get_mouse_view_coords(&ctx->mouse_x, &ctx->mouse_y);
 }
@@ -810,7 +819,17 @@ Vector2f imgui_number_box_formatted(char* label, int min, int max, char* format,
         else
         {
             // update val
-            *val += (ctx->mouse_x - ctx->prior_mouse_x);
+            int range = max - min;
+            int thresh = RANGE((view_width/4) / range, 1, 10);
+
+            int dif = ctx->mouse_x - ctx->slider_mouse_x;
+            if(ABS(dif) >= thresh)
+            {
+                *val += ABS(dif)/dif;
+                ctx->slider_mouse_x = ctx->mouse_x;
+            }
+
+            // *val += (ctx->mouse_x - ctx->prior_mouse_x);
             *val = RANGE(*val, min,max);
         }
     }
@@ -881,6 +900,12 @@ void imgui_text_box(char* label, char* buf, int bufsize)
         window_mouse_set_cursor_ibeam();
 
         bool mouse_went_down = window_mouse_left_went_down();
+
+        if(mouse_went_down)
+        {
+            printf("mouse went down\n");
+        }
+
 
         if(mouse_went_down || ctx->text_box_props.text_click_held)
         {
