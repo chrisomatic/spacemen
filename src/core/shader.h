@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAX_SHADER_LEN 2048
+#define MAX_SHADER_LEN 4096
 #define INVALID_UNIFORM_LOCATION 0xFFFFFFFF
 
 extern GLuint program_sprite_batch;

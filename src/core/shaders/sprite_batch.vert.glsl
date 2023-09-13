@@ -9,6 +9,7 @@ layout (location = 8) in float opacity;
 layout (location = 9) in uint tex_unit;
 layout (location = 10) in uint ignore_light;
 layout (location = 11) in uint blending_mode;
+layout (location = 12) in uint mask_color;
 
 out vec2 tex_coord0;
 out vec3 color0;
@@ -16,6 +17,7 @@ out float opacity0;
 flat out uint image_index0;
 flat out uint ignore_light0;
 flat out uint blending_mode0;
+flat out uint mask_color0;
 
 out vec2 to_light_vector[16];
 
@@ -32,6 +34,7 @@ void main()
     opacity0 = opacity;
     image_index0 = tex_unit;
     ignore_light0 = ignore_light;
+    mask_color0 = mask_color;
     blending_mode0 = blending_mode;
 
     //if(tex_unit == 0)

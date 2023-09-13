@@ -43,6 +43,7 @@ typedef struct
     GLuint tex_unit;
     GLuint ignore_light;
     GLuint blending_mode;
+    GLuint mask_color;
 } Sprite;
 
 typedef struct
@@ -70,6 +71,7 @@ static Matrix proj_matrix;
 static GLint loc_sprite_batch_image[16];
 static GLint loc_sprite_batch_ambient_color;
 static GLint loc_sprite_batch_ignore_light;
+static GLint loc_sprite_batch_mask_color;
 static GLint loc_sprite_batch_view;
 static GLint loc_sprite_batch_proj;
 
@@ -241,6 +243,7 @@ void gfx_init(int width, int height)
 
     loc_sprite_batch_ambient_color = glGetUniformLocation(program_sprite_batch, "ambient_color");
     loc_sprite_batch_ignore_light   = glGetUniformLocation(program_sprite_batch, "ignore_light");
+    loc_sprite_batch_mask_color   = glGetUniformLocation(program_sprite_batch, "mask_color");
     loc_sprite_batch_view    = glGetUniformLocation(program_sprite_batch, "view");
     loc_sprite_batch_proj    = glGetUniformLocation(program_sprite_batch, "projection");
 
@@ -532,7 +535,7 @@ bool gfx_sprite_batch_begin(bool in_world)
     return true;
 }
 
-bool gfx_sprite_batch_add(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool ignore_light, bool blend_additive) 
+bool gfx_sprite_batch_add(int img_index, int sprite_index, float x, float y, uint32_t color, bool mask_color, float scale, float rotation, float opacity, bool full_image, bool ignore_light, bool blend_additive) 
 {
 
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
@@ -640,6 +643,7 @@ bool gfx_sprite_batch_add(int img_index, int sprite_index, float x, float y, uin
 
     sprite->ignore_light = ignore_light ? 1 : 0;
     sprite->blending_mode = blend_additive ? 1 : 0;
+    sprite->mask_color = mask_color ? 1 : 0;
 
     return true;
 }
@@ -692,6 +696,7 @@ void gfx_sprite_batch_draw()
     glEnableVertexAttribArray(9);
     glEnableVertexAttribArray(10);
     glEnableVertexAttribArray(11);
+    glEnableVertexAttribArray(12);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,4,sprite_batch.num_sprites);
 
@@ -707,6 +712,7 @@ void gfx_sprite_batch_draw()
     glDisableVertexAttribArray(9);
     glDisableVertexAttribArray(10);
     glDisableVertexAttribArray(11);
+    glDisableVertexAttribArray(12);
 
     blend_mode_normal();
 
@@ -737,7 +743,15 @@ static void blend_mode_additive()
 bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
 {
     gfx_sprite_batch_begin(in_world);
-    bool result = gfx_sprite_batch_add(img_index,sprite_index, x, y, color, scale, rotation, opacity, full_image,false,false);
+    bool result = gfx_sprite_batch_add(img_index,sprite_index, x, y, color, false, scale, rotation, opacity, full_image,false,false);
+    gfx_sprite_batch_draw();
+    return result;
+}
+
+bool gfx_draw_image_color_mask(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
+{
+    gfx_sprite_batch_begin(in_world);
+    bool result = gfx_sprite_batch_add(img_index,sprite_index, x, y, color, true, scale, rotation, opacity, full_image,false,false);
     gfx_sprite_batch_draw();
     return result;
 }
@@ -745,7 +759,7 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
 bool gfx_draw_image_ignore_light(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
 {
     gfx_sprite_batch_begin(in_world);
-    bool result = gfx_sprite_batch_add(img_index,sprite_index, x, y, color, scale, rotation, opacity, full_image,true,false);
+    bool result = gfx_sprite_batch_add(img_index,sprite_index, x, y, color, false, scale, rotation, opacity, full_image,true,false);
     gfx_sprite_batch_draw();
     return result;
 }
@@ -753,7 +767,7 @@ bool gfx_draw_image_ignore_light(int img_index, int sprite_index, float x, float
 bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool blend_additive)
 {
     gfx_sprite_batch_begin(in_world);
-    bool result = gfx_sprite_batch_add(img_index,sprite_index, x, y, color, scale, rotation, opacity, full_image,false,blend_additive);
+    bool result = gfx_sprite_batch_add(img_index,sprite_index, x, y, color, false, scale, rotation, opacity, full_image,false,blend_additive);
     gfx_sprite_batch_draw();
     return result;
 }
@@ -1497,10 +1511,12 @@ static void init_sprite_batch()
     glVertexAttribDivisor(8, 1);
     glVertexAttribIPointer(9, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(96)); // tex unit
     glVertexAttribDivisor(9, 1);
-    glVertexAttribIPointer(10, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(100)); // is particle
+    glVertexAttribIPointer(10, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(100)); // ignore light
     glVertexAttribDivisor(10, 1);
     glVertexAttribIPointer(11, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(104)); // blending mode
     glVertexAttribDivisor(11, 1);
+    glVertexAttribIPointer(12, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(108)); // mask_color
+    glVertexAttribDivisor(12, 1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

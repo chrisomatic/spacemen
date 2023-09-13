@@ -5,6 +5,7 @@ in vec3 color0;
 in float opacity0;
 flat in uint image_index0;
 flat in uint ignore_light0;
+flat in uint mask_color0;
 flat in uint blending_mode0;
 in vec2 to_light_vector[16];
 
@@ -20,12 +21,14 @@ void main() {
     if(tex_color == vec4(1.0,0.0,1.0,1.0))
         discard;
 
-    // replace red pixels with color0
-    //vec4 new_color = vec4(tex_color.r,tex_color.g,tex_color.b,tex_color.a);
-    if(tex_color.r > 0.0 && tex_color.g == 0.0 && tex_color.b == 0.00)
+    if(mask_color0 == uint(1))
     {
-        float amount = tex_color.r / 1.0;
-        tex_color = vec4(color0.r * amount, color0.g * amount, color0.b * amount, tex_color.a);
+        // replace red pixels with color0
+        if(tex_color.r > 0.0 && tex_color.g == 0.0 && tex_color.b == 0.00)
+        {
+            float amount = tex_color.r / 1.0;
+            tex_color = vec4(color0.r * amount, color0.g * amount, color0.b * amount, tex_color.a);
+        }
     }
 
     vec3 total_diffuse = vec3(0.0);
@@ -53,6 +56,9 @@ void main() {
     {
         my_color = vec4(total_diffuse, opacity0)*tex_color;
     }
+
+    if(mask_color0 == uint(0))
+        my_color.rgb *= color0.rgb;
 
     my_color.rgb *= my_color.a;
 

@@ -56,62 +56,6 @@ void projectile_add(Player* p, float angle_offset, float energy_usage)
     proj.pos.y = p->pos.y;
     float angle = RAD(proj.angle_deg);
     float speed = 400.0;
-
-    // float x0 = p->pos.x;
-    // float y0 = p->pos.y;
-    // float x1 = x0 + p->vel.x;
-    // float y1 = y0 + p->vel.y;
-    // float vel_angle = calc_angle_rad(x0, y0, x1, y1);
-
-
-    // proj.vel.x = (speed)*cosf(angle) + p->vel.x;
-    // proj.vel.y = (speed)*sinf(angle) - p->vel.y;
-
-
-    // float vx0 = (speed)*cosf(angle);
-    // float vy0 = (speed)*sinf(angle);
-
-    // float min_speed = 10.0;
-
-    // proj.vel.x = vx0;
-    // proj.vel.y = vy0;
-
-    // if(!FEQ0(p->vel.x))
-    // {
-    //     float vx = vx0 + p->vel.x;
-    //     if(vx0 > 0 && vx < 0)
-    //     {
-    //         proj.vel.x = vx0;
-    //     }
-    //     else if(vx0 < 0 && vx > 0)
-    //     {
-    //         proj.vel.x = vx0;
-    //     }
-    //     else
-    //     {
-    //         proj.vel.x = vx;
-    //     }
-    // }
-    // if(!FEQ0(p->vel.y))
-    // {
-    //     float vy = vy0 - p->vel.y;
-    //     if(vy0 > 0 && vy < 0)
-    //     {
-    //         proj.vel.y = vy0;
-    //     }
-    //     else if(vy0 < 0 && vy > 0)
-    //     {
-    //         proj.vel.y = vy0;
-    //     }
-    //     else
-    //     {
-    //         proj.vel.y = vy;
-    //     }
-    // }
-
-
-
-
     float min_speed = 100.0;
 
     float vx0 = (speed)*cosf(angle);
@@ -307,7 +251,8 @@ void projectile_handle_collisions(float delta_t)
 
 void projectile_draw(Projectile* proj)
 {
-    gfx_draw_image(projectile_image, 0, proj->pos.x, proj->pos.y, COLOR_RED, 1.0, proj->angle_deg, 1.0, true, true);
+    gfx_draw_image_color_mask(projectile_image, 0, proj->pos.x, proj->pos.y, proj->shooter->settings.color, 1.0, proj->angle_deg, 1.0, true, true);
+    gfx_draw_image(projectile_image, 0, proj->pos.x, proj->pos.y, COLOR_RED, 0.7, proj->angle_deg, 1.0, true, true);
 
     if(game_debug_enabled)
     {

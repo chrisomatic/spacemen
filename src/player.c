@@ -328,7 +328,7 @@ void player_draw(Player* p)
         p->settings.sprite_index = 0;
     }
 
-    gfx_draw_image(player_image, p->settings.sprite_index, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
+    gfx_draw_image_color_mask(player_image, p->settings.sprite_index, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
 
     if(p->force_field)
     {

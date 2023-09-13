@@ -178,7 +178,7 @@ void imgui_begin(char* name, int x, int y)
 
     ctx->start_x = x;
     ctx->start_y = y;
-    
+
     ctx->curr.x = x;
     ctx->curr.y = y;
 
@@ -465,7 +465,7 @@ bool imgui_button(char* label, ...)
 
     draw_button(hash, new_label, &interactive);
 
-    ctx->curr.w = width; 
+    ctx->curr.w = width;
     ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
 
     progress_pos();
@@ -773,7 +773,7 @@ void imgui_color_picker(char* label, uint32_t* result)
     int prior_spacing = theme.spacing;
     imgui_set_spacing(2);
     imgui_horizontal_begin();
-        
+
         Vector2f s1 = imgui_number_box_formatted(lr, 0, 255, "%02X", &r);
         Vector2f s2 = imgui_number_box_formatted(lg, 0, 255, "%02X", &g);
         Vector2f s3 = imgui_number_box_formatted(lb, 0, 255, "%02X", &b);
@@ -821,6 +821,7 @@ Vector2f imgui_number_box_formatted(char* label, int min, int max, char* format,
             // update val
             int range = max - min;
             int thresh = RANGE((view_width/4) / range, 1, 10);
+            // printf("thresh: %d\n", thresh);
 
             int dif = ctx->mouse_x - ctx->slider_mouse_x;
             if(ABS(dif) >= thresh)
@@ -900,12 +901,6 @@ void imgui_text_box(char* label, char* buf, int bufsize)
         window_mouse_set_cursor_ibeam();
 
         bool mouse_went_down = window_mouse_left_went_down();
-
-        if(mouse_went_down)
-        {
-            printf("mouse went down\n");
-        }
-
 
         if(mouse_went_down || ctx->text_box_props.text_click_held)
         {
@@ -1669,7 +1664,7 @@ static void draw_text_box(uint32_t hash, char* label, Rect* r, char* text)
     gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, box_color, 0.0, 1.0, theme.button_opacity, true,false);
 
     float min_x = ctx->text_box_props.text_cursor_x > ctx->text_box_props.text_cursor_x_held_from ? ctx->text_box_props.text_cursor_x_held_from : ctx->text_box_props.text_cursor_x;
-    float sx = r->x + theme.text_padding + min_x; 
+    float sx = r->x + theme.text_padding + min_x;
     float sy = r->y;
     float sw = ABS(ctx->text_box_props.text_cursor_x_held_from - ctx->text_box_props.text_cursor_x);
     float sh = r->h;
@@ -1687,7 +1682,7 @@ static void draw_text_box(uint32_t hash, char* label, Rect* r, char* text)
         // line on text box
         if(ctx->text_box_props.cursor_show)
         {
-            gfx_draw_rect_xywh(x,y+(theme.text_size_px*1.3)/2.0, 1, theme.text_size_px*1.3, theme.color_text, 0.0, 1.0, 1.0, true,false); 
+            gfx_draw_rect_xywh(x,y+(theme.text_size_px*1.3)/2.0, 1, theme.text_size_px*1.3, theme.color_text, 0.0, 1.0, 1.0, true,false);
         }
     }
 

@@ -496,7 +496,7 @@ void draw_home(bool is_client)
         menu_settings.sprite_index = 0;
     }
 
-    gfx_draw_image(player_image, menu_settings.sprite_index, sel_x, sel_y, menu_settings.color, 1.0, 0.0, 1.0, true, true);
+    gfx_draw_image_color_mask(player_image, menu_settings.sprite_index, sel_x, sel_y, menu_settings.color, 1.0, 0.0, 1.0, true, true);
 
 
 #if 0
@@ -583,7 +583,7 @@ void draw_settings(bool is_client)
         }
     imgui_end();
 
-    gfx_draw_image(player_image, menu_settings.sprite_index, view_width/2.0, 200, menu_settings.color, 3.0, 0.0, 1.0, true, true);
+    gfx_draw_image_color_mask(player_image, menu_settings.sprite_index, view_width/2.0, 200, menu_settings.color, 3.0, 0.0, 1.0, true, true);
 
 }
 
@@ -610,7 +610,8 @@ void update_game_start(float _dt, bool is_client)
 
     stars_update();
 
-    if(!is_client && initiate_game)
+    // if(!is_client && initiate_game)
+    if(!is_client)
     {
         reset_game();
         player = &players[0];

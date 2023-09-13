@@ -84,13 +84,14 @@ int gfx_raw_image_create(unsigned char* data, int width, int height, bool linear
 void gfx_raw_image_update(int img_index, unsigned char* data, int width, int height);
 
 bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
+bool gfx_draw_image_color_mask(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
 bool gfx_draw_image_ignore_light(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
 bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool blend_additive);
 GFXImage* gfx_get_image_data(int img_index);
 
 // Image Batch Drawing
 bool gfx_sprite_batch_begin(bool in_world);
-bool gfx_sprite_batch_add(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool ignore_light, bool blend_additive);
+bool gfx_sprite_batch_add(int img_index, int sprite_index, float x, float y, uint32_t color, bool mask_color, float scale, float rotation, float opacity, bool full_image, bool ignore_light, bool blend_additive) ;
 void gfx_sprite_batch_draw();
 
 // Lines
