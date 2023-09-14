@@ -13,6 +13,7 @@
 #include "particles.h"
 #include "effects.h"
 #include "settings.h"
+#include "editor.h"
 
 /*
 TODO:
@@ -251,6 +252,9 @@ void init()
 
     LOGI(" - Effects.");
     effects_load_all();
+
+    LOGI(" - Editor.");
+    editor_init();
 
     LOGI(" - Settings.");
     settings_load();
@@ -543,7 +547,7 @@ void draw_settings(bool is_client)
     //Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");
     imgui_begin_panel("Settings", x,y, false);
         //imgui_set_text_size(menu_item_scale);
-        imgui_text_box("Name", menu_settings.name, NAME_MAX);
+        imgui_text_box("Name", menu_settings.name, PLAYER_NAME_MAX);
         imgui_color_picker("Color", &menu_settings.color);
         GFXImage* img = &gfx_images[player_image];
         imgui_number_box("Sprite Index", 0, img->element_count-1, &menu_settings.sprite_index);
@@ -793,12 +797,7 @@ void draw_game(bool is_client)
 
     if(debug_enabled)
     {
-        imgui_draw_demo(10,10);
-
-        imgui_begin_panel("Theme",500,10, false);
-            imgui_color_picker("Window Background Color", &background_color);
-            imgui_theme_editor();
-        imgui_end();
+        editor_draw();
     }
 }
 

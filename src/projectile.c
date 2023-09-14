@@ -13,6 +13,10 @@ glist* plist = NULL;
 static int projectile_image;
 static uint16_t id_counter = 0;
 
+ProjectileDef projectile_lookup[] = {
+    {10.0, 100.0, 400.0} // laser
+};
+
 static void projectile_remove(int index)
 {
     list_remove(plist, index);
@@ -48,15 +52,19 @@ void projectile_add(Player* p, float angle_offset, float energy_usage)
     proj.id = get_id();
     proj.player_id = p->id;
 
+    proj.type = PROJECTILE_TYPE_LASER;
+
+    ProjectileDef* projdef = &projectile_lookup[proj.type];
+
     proj.dead = false;
     proj.angle_deg = p->angle_deg;
-    proj.damage = 10.0;
+    proj.damage = projdef->damage;
 
     proj.pos.x = p->pos.x;
     proj.pos.y = p->pos.y;
     float angle = RAD(proj.angle_deg);
-    float speed = 400.0;
-    float min_speed = 100.0;
+    float speed = projdef->base_speed;
+    float min_speed = projdef->min_speed;
 
     float vx0 = (speed)*cosf(angle);
     float vy0 = (-speed)*sinf(angle);   // @minus

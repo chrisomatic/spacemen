@@ -1,10 +1,10 @@
 #pragma once
 
-#define NAME_MAX 16
+#define PLAYER_NAME_MAX 16
 
 typedef struct
 {
-    char name[NAME_MAX+1];
+    char name[PLAYER_NAME_MAX+1];
     uint32_t color;
     int sprite_index;
 } Settings;

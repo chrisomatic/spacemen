@@ -56,8 +56,8 @@ bool settings_load()
             
             if(STR_EQUAL(label, "name"))
             {
-                memset(menu_settings.name,0,NAME_MAX);
-                memcpy(menu_settings.name,value,MIN(NAME_MAX, vindex));
+                memset(menu_settings.name,0,PLAYER_NAME_MAX);
+                memcpy(menu_settings.name,value,MIN(PLAYER_NAME_MAX, vindex));
             }
             else if(STR_EQUAL(label, "color"))
             {

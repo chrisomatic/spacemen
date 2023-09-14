@@ -13,6 +13,7 @@
 
 #include "net.h"
 #include "player.h"
+#include "settings.h"
 #include "projectile.h"
 
 //#define SERVER_PRINT_SIMPLE 1

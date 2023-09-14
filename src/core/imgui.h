@@ -1,5 +1,8 @@
 #pragma once
 
+#include "math2d.h"
+
+
 #define IM_ARRAYSIZE(_ARR) ((int)(sizeof(_ARR) / sizeof(*(_ARR))))
 
 void imgui_begin(char* name, int x, int y);

@@ -5,7 +5,6 @@
 #include "settings.h"
 
 #define MAX_PLAYERS 8
-#define PLAYER_NAME_MAX 16
 
 #define MAX_ENERGY  300
 

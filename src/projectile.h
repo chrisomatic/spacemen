@@ -5,9 +5,24 @@
 
 #define MAX_PROJECTILES 256
 
+typedef enum
+{
+    PROJECTILE_TYPE_LASER,
+    PROJECTILE_TYPE_MAX
+} ProjectileType;
+
+typedef struct
+{
+    float damage;
+    float min_speed;
+    float base_speed;
+} ProjectileDef;
+
 typedef struct
 {
     uint16_t id;
+
+    ProjectileType type;
     Vector2f pos;
     Vector2f vel;
     float angle_deg;
@@ -31,6 +46,7 @@ typedef struct
 } Projectile;
 
 extern Projectile projectiles[MAX_PROJECTILES];
+extern ProjectileDef projectile_lookup[];
 extern glist* plist;
 
 void projectile_init();

@@ -18,6 +18,7 @@ gcc core/gfx.c \
     settings.c \
     projectile.c \
     effects.c \
+    editor.c \
     main.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm \
