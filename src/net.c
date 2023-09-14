@@ -386,6 +386,7 @@ static void server_send(PacketType type, ClientInfo* cli)
         {
             int index = 1;
             int num_clients = 0;
+
             for(int i = 0; i < MAX_CLIENTS; ++i)
             {
                 if(server.clients[i].state == CONNECTED)
@@ -579,7 +580,9 @@ int net_server_start()
             // Read all pending packets
             bool data_waiting = has_data_waiting(server.info.socket);
             if(!data_waiting)
+            {
                 break;
+            }
 
             Address from = {0};
             Packet recv_pkt = {0};
@@ -720,6 +723,7 @@ int net_server_start()
 
             //timer_delay_us(1000); // delay 1ms
         }
+
 
         t1_g = timer_get_time();
         double elapsed_time_g = t1_g - t0_g;

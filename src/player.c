@@ -230,8 +230,10 @@ void player_update(Player* p, double delta_t)
         player_reset(p);
     }
 
+    /*
     jet_spawner->pos.x = p->pos.x;
     jet_spawner->pos.y = p->pos.y;
+    */
 
     player_update_hit_box(p);
 
