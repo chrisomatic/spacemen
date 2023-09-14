@@ -82,8 +82,6 @@ void init_server();
 void deinit();
 
 void reset_game();
-void simulate(double);
-void simulate_client(double);
 
 void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _draw);
 
@@ -99,6 +97,8 @@ void run_game_start();
 void update_game_start(float _dt, bool is_client);
 void draw_game_start(bool is_client);
 
+void simulate(double);
+void simulate_client(double);
 void run_game();
 void update_game(float _dt, bool is_client);
 void draw_game(bool is_client);
@@ -236,11 +236,12 @@ void init()
     world_box.y = view_height/2.0;
 
     LOGI(" - Players.");
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        players[i].active = false;
-        player_init(&players[i]);
-    }
+    players_init();
+    // for(int i = 0; i < MAX_CLIENTS; ++i)
+    // {
+    //     players[i].active = false;
+    //     player_init(&players[i]);
+    // }
 
     LOGI(" - Projectile.");
     projectile_init();
@@ -273,11 +274,12 @@ void init_server()
     world_box.y = view_height/2.0;
 
     gfx_image_init();
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        players[i].active = false;
-        player_init(&players[i]);
-    }
+    players_init();
+    // for(int i = 0; i < MAX_CLIENTS; ++i)
+    // {
+    //     players[i].active = false;
+    //     player_init(&players[i]);
+    // }
 
     projectile_init();
 }
@@ -293,54 +295,13 @@ void deinit()
 void reset_game()
 {
     projectile_clear_all();
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        players[i].active = false;
-        player_init(&players[i]);
-    }
-}
+    players_init();
 
-
-void simulate(double dt)
-{
-    if(!paused)
-    {
-        projectile_update(dt);
-        particles_update(dt);
-        stars_update();
-    }
-
-    // player_update(player, dt);
-    for(int i = 0; i < MAX_PLAYERS; ++i)
-    {
-        player_update(&players[i], dt);
-    }
-
-    if(!paused) projectile_handle_collisions(dt);
-}
-
-void simulate_client(double dt)
-{
-    stars_update();
-    //projectile_update(dt);
-    //player_update(player,dt); // client-side prediction
-    player_handle_net_inputs(player, dt);
-
-    for(int i = 0; i < plist->count; ++i)
-    {
-        projectile_lerp(&projectiles[i], dt);
-        projectile_update_hit_box(&projectiles[i]);
-    }
-
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        if(players[i].active)
-        {
-            player_lerp(&players[i], dt);
-            player_update_hit_box(&players[i]);
-        }
-    }
-
+    // for(int i = 0; i < MAX_CLIENTS; ++i)
+    // {
+    //     players[i].active = false;
+    //     player_init(&players[i]);
+    // }
 }
 
 void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _draw)
@@ -582,7 +543,7 @@ void draw_settings(bool is_client)
     //Vector2f s = gfx_draw_string(x,y, COLOR_WHITE, menu_item_scale, 0.0, 1.0, true, false, "Name");
     imgui_begin_panel("Settings", x,y, false);
         //imgui_set_text_size(menu_item_scale);
-        imgui_text_box("Name", menu_settings.name, 100);
+        imgui_text_box("Name", menu_settings.name, NAME_MAX);
         imgui_color_picker("Color", &menu_settings.color);
         GFXImage* img = &gfx_images[player_image];
         imgui_number_box("Sprite Index", 0, img->element_count-1, &menu_settings.sprite_index);
@@ -717,6 +678,55 @@ void draw_game_start(bool is_client)
 }
 
 
+// mouse
+int mx=0, my=0;
+
+void simulate(double dt)
+{
+    if(!paused)
+    {
+        projectile_update(dt);
+        particles_update(dt);
+        stars_update();
+
+        window_get_mouse_view_coords(&mx, &my);
+
+    }
+
+    // player_update(player, dt);
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        player_update(&players[i], dt);
+    }
+
+    if(!paused) projectile_handle_collisions(dt);
+}
+
+void simulate_client(double dt)
+{
+    stars_update();
+    //projectile_update(dt);
+    //player_update(player,dt); // client-side prediction
+    player_handle_net_inputs(player, dt);
+
+    for(int i = 0; i < plist->count; ++i)
+    {
+        projectile_lerp(&projectiles[i], dt);
+        projectile_update_hit_box(&projectiles[i]);
+    }
+
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if(players[i].active)
+        {
+            player_lerp(&players[i], dt);
+            player_update_hit_box(&players[i]);
+        }
+    }
+
+}
+
+
 void run_game()
 {
     run_loop(SCREEN_GAME, update_game, draw_game);
@@ -774,6 +784,12 @@ void draw_game(bool is_client)
 
 
     gfx_draw_lines();
+
+
+    if(game_debug_enabled)
+    {
+        gfx_draw_rect_xywh(mx, my, 10, 10, COLOR_RED, 0.0, 1.0, 1.0, false, true);
+    }
 
     if(debug_enabled)
     {

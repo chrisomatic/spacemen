@@ -4,7 +4,7 @@
 
 #define TICK_RATE 20.0f
 
-#define MAX_CLIENTS 8
+#define MAX_CLIENTS     MAX_PLAYERS
 #define MAX_PACKET_DATA_SIZE 1024
 
 #ifdef __GNUC__

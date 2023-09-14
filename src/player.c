@@ -23,6 +23,7 @@ void player_init_local()
     window_controls_add_key(&player->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_S);
     window_controls_add_key(&player->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
     window_controls_add_key(&player->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
+    window_controls_add_key(&player->actions[PLAYER_ACTION_SCUM].state, GLFW_KEY_LEFT_SHIFT);
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_SPACE);
     window_controls_add_key(&player->actions[PLAYER_ACTION_SHIELD].state, GLFW_KEY_F);
     window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
@@ -54,8 +55,8 @@ void player_init_local2()
     if(p == NULL)
         return;
 
-    p->pos.x = view_width - 100;
-    p->pos.y = view_height - 100;
+    p->pos.x = view_width - 100;// + rand()%50;
+    p->pos.y = view_height - 100;// + rand()%50;
 
     window_controls_add_key(&p->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_UP);
     window_controls_add_key(&p->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_DOWN);
@@ -63,22 +64,14 @@ void player_init_local2()
     window_controls_add_key(&p->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_RIGHT);
     window_controls_add_key(&p->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_RIGHT_SHIFT);
     memcpy(p->settings.name, "Decker", strlen("Decker"));
-    p->settings.color = COLOR_RED;
+    p->settings.color = COLOR_BLACK;
     p->settings.sprite_index = 3;
     p->active = true;
 }
 
-void player_deactivate(int index)
+
+void players_init()
 {
-    if(&players[index] == player)
-        return;
-    players[index].active = false;
-}
-
-
-void player_init(Player* p)
-{
-
     if(player_image == -1)
     {
         // printf("loading player image\n");
@@ -86,36 +79,57 @@ void player_init(Player* p)
         printf("player_image: %d\n", player_image);
     }
 
-    memset(p,0, sizeof(Player));
-
-    p->pos.x = 100.0;
-    p->pos.y = 100.0;
-    p->vel.x = 0.0;
-    p->vel.y = 0.0;
-    p->angle_deg = 90.0;
-    p->accel_factor = 10.0;
-    p->turn_rate = 5.0;
-    // p->velocity_limit = 500.0;
-    p->velocity_limit = 50000.0;
-    p->energy = MAX_ENERGY/2.0;
-    p->force_field = false;
-    p->hp_max = 100.0;
-    p->hp = p->hp_max;
-
-    p->hit_box.x = p->pos.x;
-    p->hit_box.y = p->pos.y;
     GFXImage* img = &gfx_images[player_image];
     float wh = MAX(img->element_width, img->element_height)*0.9;
-    p->hit_box.w = wh;
-    p->hit_box.h = wh;
 
-    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        Player* p = &players[i];
+        memset(p,0, sizeof(Player));
+
+        p->active = false;
+        p->id = i;
+        p->pos.x = 100.0;
+        p->pos.y = 100.0;
+        p->vel.x = 0.0;
+        p->vel.y = 0.0;
+        p->angle_deg = 90.0;
+        p->accel_factor = 10.0;
+        p->turn_rate = 5.0;
+        p->velocity_limit = 500.0;
+        p->energy = MAX_ENERGY/2.0;
+        p->force_field = false;
+        p->hp_max = 100.0;
+        p->hp = p->hp_max;
+
+        p->hit_box.x = p->pos.x;
+        p->hit_box.y = p->pos.y;
+        p->hit_box.w = wh;
+        p->hit_box.h = wh;
+
+        memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
+    }
+
 }
 
-void player_activate(Player* p)
+Player* player_get_by_id(uint8_t id)
 {
-    p->active = true;
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        if(players[i].id == id)
+            return &players[i];
+    }
+    return NULL;
 }
+
+void player_set_active_state(uint8_t id, bool active)
+{
+    Player* p = player_get_by_id(id);
+    if(p == NULL) return;
+
+    p->active = active;
+}
+
 
 void player_update(Player* p, double delta_t)
 {
@@ -158,6 +172,15 @@ void player_update(Player* p, double delta_t)
     bool bkwd  = p->actions[PLAYER_ACTION_BACKWARD].state;
     bool left  = p->actions[PLAYER_ACTION_LEFT].state;
     bool right = p->actions[PLAYER_ACTION_RIGHT].state;
+    bool scum = p->actions[PLAYER_ACTION_SCUM].state;
+
+    float acc_factor_adj = 1.0;
+    float turn_factor_adj = 1.0;
+    if(scum)
+    {
+        acc_factor_adj = 0.1;
+        turn_factor_adj = 0.1;
+    }
 
     if(fwd)
     {
@@ -165,8 +188,8 @@ void player_update(Player* p, double delta_t)
 
         if(fwd)
         {
-            p->vel.x += p->accel_factor*cos(angle);
-            p->vel.y -= p->accel_factor*sin(angle);
+            p->vel.x += p->accel_factor*acc_factor_adj*cos(angle);
+            p->vel.y -= p->accel_factor*acc_factor_adj*sin(angle);
         }
 
         float D = p->velocity_limit;
@@ -194,12 +217,12 @@ void player_update(Player* p, double delta_t)
 
     if(left)
     {
-        p->angle_deg += p->turn_rate;
+        p->angle_deg += p->turn_rate*turn_factor_adj;
     }
 
     if(right)
     {
-        p->angle_deg -= p->turn_rate;
+        p->angle_deg -= p->turn_rate*turn_factor_adj;
     }
 
     if(p->actions[PLAYER_ACTION_RESET].toggled_on)

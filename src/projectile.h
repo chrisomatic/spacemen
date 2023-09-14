@@ -15,7 +15,8 @@ typedef struct
     Rect hit_box;
     Rect hit_box_prior;
 
-    Player* shooter;
+    // Player* shooter;
+    uint8_t player_id;
 
     float damage;
     float time;

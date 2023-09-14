@@ -46,7 +46,7 @@ void projectile_add(Player* p, float angle_offset, float energy_usage)
     player_add_energy(p, -energy_usage);
 
     proj.id = get_id();
-    proj.shooter = p;
+    proj.player_id = p->id;
 
     proj.dead = false;
     proj.angle_deg = p->angle_deg;
@@ -127,10 +127,6 @@ void projectile_add(Player* p, float angle_offset, float energy_usage)
         proj.vel.x = min_speed * xa;
         proj.vel.y = -min_speed * ya;   //@minus
     }
-
-
-
-
 
     proj.time = 0.0;
     proj.ttl  = 5.0;
@@ -235,8 +231,7 @@ void projectile_handle_collisions(float delta_t)
         for(int j = 0; j < MAX_PLAYERS; ++j)
         {
             if(!players[j].active) continue;
-
-            if(p->shooter == &players[j]) continue;
+            if(p->player_id == players[j].id) continue;
 
             bool hit = are_rects_colliding(&p->hit_box_prior, &p->hit_box, &players[j].hit_box);
             if(hit)
@@ -251,7 +246,14 @@ void projectile_handle_collisions(float delta_t)
 
 void projectile_draw(Projectile* proj)
 {
-    gfx_draw_image_color_mask(projectile_image, 0, proj->pos.x, proj->pos.y, proj->shooter->settings.color, 1.0, proj->angle_deg, 1.0, true, true);
+    uint32_t color = COLOR_RED;
+    Player* p = player_get_by_id(proj->player_id);
+    if(p != NULL)
+    {
+        color = p->settings.color;
+    }
+
+    gfx_draw_image_color_mask(projectile_image, 0, proj->pos.x, proj->pos.y, color, 1.0, proj->angle_deg, 1.0, true, true);
     gfx_draw_image(projectile_image, 0, proj->pos.x, proj->pos.y, COLOR_RED, 0.7, proj->angle_deg, 1.0, true, true);
 
     if(game_debug_enabled)

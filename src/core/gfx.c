@@ -782,8 +782,6 @@ GFXImage* gfx_get_image_data(int img_index)
     return &gfx_images[img_index];
 }
 
-
-
 void gfx_clear_lines()
 {
     num_line_points = 0;

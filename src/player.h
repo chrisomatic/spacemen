@@ -16,6 +16,7 @@ enum PlayerActions
     PLAYER_ACTION_BACKWARD,
     PLAYER_ACTION_LEFT,
     PLAYER_ACTION_RIGHT,
+    PLAYER_ACTION_SCUM,
     PLAYER_ACTION_SHOOT,
     PLAYER_ACTION_SHIELD,
     PLAYER_ACTION_PAUSE,
@@ -34,6 +35,8 @@ typedef struct
 typedef struct
 {
     bool active;
+
+    uint8_t id;
 
     float hp;
     float hp_max;
@@ -74,10 +77,12 @@ extern Player* player;
 extern int player_count;
 extern int player_image;
 
-void player_init(Player* p);
+void players_init();
+Player* player_get_by_id(uint8_t id);
+void player_set_active_state(uint8_t id, bool active);
+
 void player_init_local();
 void player_init_local2();
-void player_deactivate(int index);
 void player_update(Player* p, double delta_t);
 void player_add_energy(Player* p, float e);
 void player_update_hit_box(Player* p);
