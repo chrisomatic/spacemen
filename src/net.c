@@ -425,6 +425,9 @@ static void server_send(PacketType type, ClientInfo* cli)
                 memcpy(&pkt.data[index],&projectiles[i].angle_deg,sizeof(float)); // angle
                 index += sizeof(float);
 
+                memcpy(&pkt.data[index],&projectiles[i].player_id,sizeof(uint8_t)); // player id
+                index += sizeof(uint8_t);
+
             }
 
             pkt.data_len = index;
@@ -1309,6 +1312,7 @@ void net_client_update()
                             uint16_t id;
                             Vector2f pos;
                             float angle;
+                            uint8_t player_id;
 
 
                             memcpy(&id, &srvpkt.data[index],sizeof(uint16_t));
@@ -1319,6 +1323,10 @@ void net_client_update()
 
                             memcpy(&angle, &srvpkt.data[index],sizeof(float));
                             index += sizeof(float);
+
+                            memcpy(&player_id, &srvpkt.data[index],sizeof(uint8_t));
+                            index += sizeof(uint8_t);
+
 
                             p->lerp_t = 0.0;
 
