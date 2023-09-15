@@ -92,6 +92,7 @@ PACK(struct PlayerNetState
     float angle;
     float energy;
     float hp;
+    uint8_t sprite_index;
 });
 
 typedef struct PlayerNetState PlayerNetState;

@@ -19,6 +19,7 @@ typedef enum
     EFFECT_BULLET_TRAIL,
     EFFECT_GUN_BLAST,
     EFFECT_LEVEL_UP,
+    EFFECT_JETS,
     EFFECT_MAX,
 } Effect;
 

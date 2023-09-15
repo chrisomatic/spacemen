@@ -75,6 +75,20 @@ static NetPlayerInput net_player_inputs[INPUT_QUEUE_MAX]; // shared
 static int input_count = 0;
 static int inputs_per_packet = 1.0; //(TARGET_FPS/TICK_RATE);
 
+static inline void pack_u8(Packet* pkt, uint8_t d);
+static inline void pack_u16(Packet* pkt, uint16_t d);
+static inline void pack_u32(Packet* pkt, uint32_t d);
+static inline void pack_float(Packet* pkt, float d);
+static inline void pack_string(Packet* pkt, char* s, uint8_t max_len);
+static inline void pack_vec2(Packet* pkt, Vector2f d);
+
+static inline uint8_t  unpack_u8(Packet* pkt, int* offset);
+static inline uint16_t unpack_u16(Packet* pkt, int* offset);
+static inline uint32_t unpack_u32(Packet* pkt, int* offset);
+static inline float    unpack_float(Packet* pkt, int* offset);
+static inline uint8_t  unpack_string(Packet* pkt, char* s, int* offset);
+static inline Vector2f unpack_vec2(Packet* pkt, int* offset);
+
 static uint64_t rand64(void)
 {
     uint64_t r = 0;
@@ -388,24 +402,17 @@ static void server_send(PacketType type, ClientInfo* cli)
             int index = 1;
             int num_clients = 0;
 
+            pkt.data_len = 1;
+
             for(int i = 0; i < MAX_CLIENTS; ++i)
             {
                 if(server.clients[i].state == CONNECTED)
                 {
-                    pkt.data[index] = (uint8_t)i;
-                    index += 1;
-
-                    memcpy(&pkt.data[index],&server.clients[i].player_state.pos,sizeof(Vector2f)); // pos
-                    index += sizeof(Vector2f);
-
-                    memcpy(&pkt.data[index],&server.clients[i].player_state.angle,sizeof(float)); // angle
-                    index += sizeof(float);
-
-                    memcpy(&pkt.data[index],&server.clients[i].player_state.energy,sizeof(float)); // energy
-                    index += sizeof(float);
-
-                    memcpy(&pkt.data[index],&server.clients[i].player_state.hp,sizeof(float)); // hp
-                    index += sizeof(float);
+                    pack_u8(&pkt,(uint8_t)i);
+                    pack_vec2(&pkt,server.clients[i].player_state.pos);
+                    pack_float(&pkt,server.clients[i].player_state.angle);
+                    pack_float(&pkt,server.clients[i].player_state.energy);
+                    pack_float(&pkt,server.clients[i].player_state.hp);
 
                     num_clients++;
                 }
@@ -414,25 +421,17 @@ static void server_send(PacketType type, ClientInfo* cli)
             pkt.data[0] = num_clients;
 
             if(plist->count > 0)
-                pkt.data[index++] = plist->count;
+            {
+                pack_u8(&pkt,(uint8_t)plist->count);
+            }
 
             for(int i = 0; i < plist->count; ++i)
             {
-                memcpy(&pkt.data[index],&projectiles[i].id,sizeof(uint16_t)); // id
-                index += sizeof(uint16_t);
-
-                memcpy(&pkt.data[index],&projectiles[i].pos,sizeof(Vector2f)); // pos
-                index += sizeof(Vector2f);
-
-                memcpy(&pkt.data[index],&projectiles[i].angle_deg,sizeof(float)); // angle
-                index += sizeof(float);
-
-                memcpy(&pkt.data[index],&projectiles[i].player_id,sizeof(uint8_t)); // player id
-                index += sizeof(uint8_t);
-
+                pack_u16(&pkt,projectiles[i].id);
+                pack_vec2(&pkt,projectiles[i].pos);
+                pack_float(&pkt,projectiles[i].angle_deg);
+                pack_u8(&pkt,projectiles[i].player_id);
             }
-
-            pkt.data_len = index;
 
             //print_packet(&pkt);
 
@@ -450,33 +449,24 @@ static void server_send(PacketType type, ClientInfo* cli)
             break;
         case PACKET_TYPE_SETTINGS:
 
-            int index = 1;
             int num_clients = 0;
+
+            pkt.data_len = 1;
 
             for(int i = 0; i < MAX_CLIENTS; ++i)
             {
                 if(server.clients[i].state == CONNECTED)
                 {
-                    pkt.data[index] = (uint8_t)i;
-                    index += 1;
-
-                    memcpy(&pkt.data[index],&players[i].settings.color,sizeof(uint32_t)); // color
-                    index += sizeof(uint32_t);
-
-                    uint8_t namelen = (uint8_t)MIN(PLAYER_NAME_MAX,strlen(players[i].settings.name));
-
-                    pkt.data[index] = namelen; // namelen
-                    index += 1;
-
-                    memcpy(&pkt.data[index],players[i].settings.name,namelen*sizeof(char)); // name
-                    index += namelen*sizeof(char);
+                    pack_u8(&pkt,(uint8_t)i);
+                    pack_u8(&pkt,players[i].settings.sprite_index);
+                    pack_u32(&pkt,players[i].settings.color);
+                    pack_string(&pkt,players[i].settings.name, PLAYER_NAME_MAX);
 
                     num_clients++;
                 }
             }
 
             pkt.data[0] = num_clients;
-            pkt.data_len = index;
 
             net_send(&server.info,&cli->address,&pkt);
 
@@ -691,12 +681,14 @@ int net_server_start()
                     } break;
                     case PACKET_TYPE_SETTINGS:
                     {
-                        uint32_t color = (recv_pkt.data[8]<<24) | (recv_pkt.data[9] <<16) | (recv_pkt.data[10]<<8) | (recv_pkt.data[11]);
+                        uint8_t sprite_index = recv_pkt.data[8];
+                        uint32_t color = (recv_pkt.data[9]<<24) | (recv_pkt.data[10] <<16) | (recv_pkt.data[11]<<8) | (recv_pkt.data[12]);
                         LOGN("Received Settings, color: %u", color);
-                        uint8_t namelen = recv_pkt.data[12];
+                        uint8_t namelen = recv_pkt.data[13];
 
+                        players[cli->client_id].settings.sprite_index = sprite_index;
                         players[cli->client_id].settings.color = color;
-                        memcpy(players[cli->client_id].settings.name,&recv_pkt.data[13],MIN(PLAYER_NAME_MAX, namelen)*sizeof(char));
+                        memcpy(players[cli->client_id].settings.name,&recv_pkt.data[14],MIN(PLAYER_NAME_MAX, namelen)*sizeof(char));
 
                         for(int i = 0; i < MAX_CLIENTS; ++i)
                         {
@@ -953,19 +945,21 @@ static void client_send(PacketType type)
         case PACKET_TYPE_SETTINGS:
             memcpy(&pkt.data[0],(uint8_t*)client.xor_salts,8);
 
+            pkt.data[8] = player->settings.sprite_index;
+
             // SETTINGS...
             // color
             uint8_t* cp = (uint8_t*)&player->settings.color;
-            pkt.data[8]  = cp[0];
-            pkt.data[9]  = cp[1];
-            pkt.data[10] = cp[2];
-            pkt.data[11] = cp[3];
+            pkt.data[9]  = cp[0];
+            pkt.data[10]  = cp[1];
+            pkt.data[11] = cp[2];
+            pkt.data[12] = cp[3];
 
             // name
             uint8_t namelen = (uint8_t)strlen(player->settings.name);
-            pkt.data[12] = namelen;
-            memcpy(&pkt.data[13], player->settings.name,namelen*sizeof(char));
-            pkt.data_len = 13+namelen;
+            pkt.data[13] = namelen;
+            memcpy(&pkt.data[14], player->settings.name,namelen*sizeof(char));
+            pkt.data_len = 14+namelen;
 
             // TODO: sprite index
 
@@ -1161,10 +1155,10 @@ void net_client_update()
             {
                 case PACKET_TYPE_STATE:
                 {
-                    uint8_t num_players = (uint8_t)srvpkt.data[0];
-                    client.player_count = num_players;
+                    int index = 0;
 
-                    int index = 1;
+                    uint8_t num_players = unpack_u8(&srvpkt, &index);
+                    client.player_count = num_players;
 
                     for(int i = 0; i < MAX_CLIENTS; ++i)
                         players[i].active = false;
@@ -1173,8 +1167,8 @@ void net_client_update()
 
                     for(int i = 0; i < num_players; ++i)
                     {
-                        uint8_t client_id = srvpkt.data[index];
-                        index += 1;
+
+                        uint8_t client_id = unpack_u8(&srvpkt, &index);
 
                         //LOGN("  %d: Client ID %d", i, client_id);
 
@@ -1184,110 +1178,16 @@ void net_client_update()
                             break;
                         }
 
-                        Vector2f pos;
-                        float angle;
-                        float energy;
-                        float hp;
-
-                        memcpy(&pos, &srvpkt.data[index], sizeof(Vector2f));
-                        index += sizeof(Vector2f);
-                        memcpy(&angle, &srvpkt.data[index],sizeof(float));
-                        index += sizeof(float);
-                        memcpy(&energy, &srvpkt.data[index], sizeof(float));
-                        index += sizeof(float);
-                        memcpy(&hp, &srvpkt.data[index], sizeof(float));
-                        index += sizeof(float);
+                        Vector2f pos = unpack_vec2(&srvpkt, &index);
+                        float angle  = unpack_float(&srvpkt, &index);
+                        float energy = unpack_float(&srvpkt, &index);
+                        float hp     = unpack_float(&srvpkt, &index);
 
                         //LOGN("      Pos: %f, %f. Angle: %f", pos.x, pos.y, angle);
 
                         Player* p = &players[client_id];
                         p->active = true;
 
-#if 0
-                        if(p == player)
-                        {
-                            for(int i = p->predicted_state_index; i >= 0; --i)
-                            {
-                                PlayerNetState* pstate = &p->predicted_states[i];
-
-                                if(pstate->associated_packet_id == srvpkt.hdr.ack)
-                                {
-                                    if(pstate->pos.x != pos.x || pstate->pos.y != pos.y || pstate->angle != angle)
-                                    {
-                                        LOGW("Out of sync with server, correcting client position/angle");
-                                        /*
-                                        LOGW("======");
-                                        LOGW("Out of sync with server, correcting client position/angle");
-                                        LOGW("Packet ID: %u",pstate->associated_packet_id);
-                                        LOGW("%f %f, %f -> %f %f, %f",pstate->pos.x, pstate->pos.y, pstate->angle, pos.x, pos.y, angle);
-
-                                        for(int i = 0; i < MAX_CLIENT_PREDICTED_STATES; ++i)
-                                        {
-                                            LOGW("[%02d] %d: %f %f, %f",i,p->predicted_states[i].associated_packet_id, p->predicted_states[i].pos.x, p->predicted_states[i].pos.y, p->predicted_states[i].angle);
-                                        }
-                                            
-                                        LOGW("======");
-                                        */
-
-                                        p->predicted_state_index = i; // disregard all predicted state since this correction
-
-                                        // set player's state
-                                        p->pos.x = pos.x;
-                                        p->pos.y = pos.y;
-                                        p->angle_deg = angle;
-
-                                        // re-do any needed sent inputs
-                                        for(int i = srvpkt.hdr.ack+1; i < client.info.local_latest_packet_id; ++i)
-                                        {
-                                            Packet input_pkt = {0};
-
-                                            bool success = client_get_input_packet(&input_pkt,i);
-                                            if(success)
-                                            {
-                                                NetPlayerInput* inputs = (NetPlayerInput*)&input_pkt.data[0];
-                                                for(int j = 0; j < inputs_per_packet; ++j)
-                                                {
-                                                    NetPlayerInput* input = &inputs[j];
-
-                                                    LOGN("Applying input from packet %d:%d",i, j);
-
-                                                    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
-                                                    {
-                                                        bool key_state = (input->keys & (1<<i)) != 0;
-                                                        p->actions[i].state = key_state;
-                                                    }
-
-                                                    // p->keys = input->keys;
-
-                                                    player_update(p, input->delta_t);
-                                                }
-                                            }
-                                        }
-                                        
-                                        // re-do unsent inputs
-                                        for(int i = 0; i < input_count; ++i)
-                                        {
-                                            NetPlayerInput* input = &net_player_inputs[i];
-
-                                            for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
-                                            {
-                                                bool key_state = (input->keys & (1<<i)) != 0;
-                                                p->actions[i].state = key_state;
-                                            }
-
-                                            // p->keys = input->keys;
-
-                                            player_update(p, input->delta_t);
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                        }
-#endif
                         p->lerp_t = 0.0;
 
                         p->server_state_prior.pos.x = p->pos.x;
@@ -1306,8 +1206,7 @@ void net_client_update()
                     if(index < srvpkt.data_len-1)
                     {
                         // load projectiles
-                        uint8_t num_projectiles = srvpkt.data[index];
-                        index += 1;
+                        uint8_t num_projectiles = unpack_u8(&srvpkt, &index);
 
                         list_clear(plist);
                         plist->count = num_projectiles;
@@ -1316,24 +1215,10 @@ void net_client_update()
                         {
                             Projectile* p = &projectiles[i];
 
-                            uint16_t id;
-                            Vector2f pos;
-                            float angle;
-                            uint8_t player_id;
-
-
-                            memcpy(&id, &srvpkt.data[index],sizeof(uint16_t));
-                            index += sizeof(uint16_t);
-
-                            memcpy(&pos, &srvpkt.data[index], sizeof(Vector2f));
-                            index += sizeof(Vector2f);
-
-                            memcpy(&angle, &srvpkt.data[index],sizeof(float));
-                            index += sizeof(float);
-
-                            memcpy(&player_id, &srvpkt.data[index],sizeof(uint8_t));
-                            index += sizeof(uint8_t);
-
+                            uint16_t id       = unpack_u16(&srvpkt, &index);
+                            Vector2f pos      = unpack_vec2(&srvpkt, &index);
+                            float angle       = unpack_float(&srvpkt, &index);
+                            uint8_t player_id = unpack_u8(&srvpkt, &index);
 
                             p->lerp_t = 0.0;
 
@@ -1374,6 +1259,7 @@ void net_client_update()
 
                         Player* p = &players[client_id];
 
+                        p->settings.sprite_index = srvpkt.data[index++];
                         p->settings.color = (uint32_t)((srvpkt.data[index+0]<<24)|(srvpkt.data[index+1]<<16)|(srvpkt.data[index+2]<<8)|(srvpkt.data[index+3]));
                         index += sizeof(uint32_t);
 
@@ -1383,6 +1269,34 @@ void net_client_update()
                         memcpy(&p->settings.name, &srvpkt.data[index],namelen*sizeof(char)); // name
                         index += namelen*sizeof(char);
                     }
+
+
+                    /*
+
+                    int index = 0;
+                    uint8_t num_players = unpack_u8(&srvpkt, &index);
+
+                    for(int i = 0; i < num_players; ++i)
+                    {
+                        uint8_t client_id = unpack_u8(&srvpkt, &index);
+
+                        //LOGN("  %d: Client ID %d", i, client_id);
+
+                        if(client_id >= MAX_CLIENTS)
+                        {
+                            LOGE("Client ID is too large: %d",client_id);
+                            break;
+                        }
+
+                        Player* p = &players[client_id];
+
+                        p->settings.sprite_index = unpack_u8(&srvpkt,&index);
+                        p->settings.color = unpack_u32(&srvpkt, &index);
+
+                        uint8_t namelen = unpack_string(&srvpkt,p->settings.name, &index);
+                    }
+
+                        */
 
                 } break;
                 case PACKET_TYPE_PING:
@@ -1461,4 +1375,101 @@ int net_client_recv(Packet* pkt)
 void net_client_deinit()
 {
     socket_close(client.info.socket);
+}
+
+
+static inline void pack_u8(Packet* pkt, uint8_t d)
+{
+    pkt->data[pkt->data_len] = d;
+    pkt->data_len += sizeof(uint8_t);
+}
+
+static inline void pack_u16(Packet* pkt, uint16_t d)
+{
+    uint8_t* b = (uint8_t*)&d;
+
+    pkt->data[pkt->data_len+0] = b[0];
+    pkt->data[pkt->data_len+1] = b[1];
+
+    pkt->data_len+=sizeof(uint16_t);
+}
+
+static inline void pack_u32(Packet* pkt, uint32_t d)
+{
+    uint8_t* b = (uint8_t*)&d;
+
+    pkt->data[pkt->data_len+0] = b[0];
+    pkt->data[pkt->data_len+1] = b[1];
+    pkt->data[pkt->data_len+2] = b[2];
+    pkt->data[pkt->data_len+3] = b[3];
+
+    pkt->data_len+=sizeof(uint32_t);
+}
+
+static inline void pack_float(Packet* pkt, float d)
+{
+    memcpy(&pkt->data[pkt->data_len],&d,sizeof(float));
+    pkt->data_len+=sizeof(float);
+}
+
+static inline void pack_string(Packet* pkt, char* s, uint8_t max_len)
+{
+    uint8_t slen = (uint8_t)MIN(max_len,strlen(s));
+    pkt->data[pkt->data_len] = slen;
+    pkt->data_len++;
+
+    memcpy(&pkt->data[pkt->data_len],s,slen*sizeof(char));
+    pkt->data_len += slen*sizeof(char);
+}
+
+static inline void pack_vec2(Packet* pkt, Vector2f d)
+{
+    memcpy(&pkt->data[pkt->data_len],&d,sizeof(Vector2f));
+    pkt->data_len+=sizeof(Vector2f);
+}
+
+static inline uint8_t  unpack_u8(Packet* pkt, int* offset)
+{
+    uint8_t r = pkt->data[*offset];
+    (*offset)++;
+    return r;
+}
+
+static inline uint16_t unpack_u16(Packet* pkt, int* offset)
+{
+    uint16_t r = pkt->data[*offset] << 8 | pkt->data[*(offset+1)];
+    (*offset)+=sizeof(uint16_t);
+    return r;
+}
+
+static inline uint32_t unpack_u32(Packet* pkt, int* offset)
+{
+    uint32_t r = pkt->data[*offset] << 24 | pkt->data[*(offset+1)] << 16 | pkt->data[*(offset+2)] << 8 | pkt->data[*(offset+3)];
+    (*offset)+=sizeof(uint32_t);
+    return r;
+}
+
+static inline float unpack_float(Packet* pkt, int* offset)
+{
+    float r;
+    memcpy(&r, &pkt->data[*offset], sizeof(float));
+    (*offset) += sizeof(float);
+    return r;
+}
+
+static inline uint8_t unpack_string(Packet* pkt, char* s, int* offset)
+{
+    uint8_t len = pkt->data[*offset];
+    (*offset)++;
+    memcpy(s,&pkt->data[*offset],len*sizeof(char));
+    (*offset) += len;
+    return len;
+}
+
+static inline Vector2f unpack_vec2(Packet* pkt, int* offset)
+{
+    Vector2f r;
+    memcpy(&r, &pkt->data[*offset], sizeof(Vector2f));
+    (*offset) += sizeof(Vector2f);
+    return r;
 }

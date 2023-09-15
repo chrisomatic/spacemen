@@ -31,11 +31,9 @@ void player_init_local()
 
     player->active = true;
 
-    ParticleEffect firepit = {0};
-    memcpy(&firepit, &particle_effects[EFFECT_FIRE],sizeof(ParticleEffect));
-    firepit.spawn_radius_min = 5.0;
-    firepit.spawn_radius_max = 10.0;
-    jet_spawner = particles_spawn_effect(100,100, &firepit,0.0,true,false);
+    ParticleEffect jets = {0};
+    memcpy(&jets, &particle_effects[EFFECT_JETS],sizeof(ParticleEffect));
+    jet_spawner = particles_spawn_effect(100,100, &jets,0.0,true,false);
 
 }
 
@@ -230,10 +228,12 @@ void player_update(Player* p, double delta_t)
         player_reset(p);
     }
 
-    /*
-    jet_spawner->pos.x = p->pos.x;
-    jet_spawner->pos.y = p->pos.y;
-    */
+    if(p == player && role != ROLE_SERVER)
+    {
+        Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
+        jet_spawner->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
+        jet_spawner->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
+    }
 
     player_update_hit_box(p);
 
@@ -367,14 +367,17 @@ void player_draw(Player* p)
         p->settings.sprite_index = 0;
     }
 
-    gfx_draw_image_color_mask(player_image, p->settings.sprite_index, p->pos.x,p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
+    if(p == player)
+    {
+        particles_draw_spawner(jet_spawner,true, false);
+    }
+
+    gfx_draw_image_color_mask(player_image, p->settings.sprite_index, p->pos.x, p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
 
     if(p->force_field)
     {
         gfx_draw_circle(p->pos.x, p->pos.y, p->hit_box.w+3, COLOR_BLUE, 0.2, true, true);
     }
-
-    //particles_draw_spawner(jet_spawner,true, false);
 
     float name_scale = 0.15;
     Vector2f title_size = gfx_string_get_size(name_scale, p->settings.name);
