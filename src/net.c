@@ -967,6 +967,8 @@ static void client_send(PacketType type)
             memcpy(&pkt.data[13], player->settings.name,namelen*sizeof(char));
             pkt.data_len = 13+namelen;
 
+            // TODO: sprite index
+
             net_send(&client.info,&server.address,&pkt);
             break;
         case PACKET_TYPE_DISCONNECT:

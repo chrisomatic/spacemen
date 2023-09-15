@@ -44,8 +44,10 @@ int menu_selected_option = 0;
 
 Settings menu_settings = {0};
 
-Vector2i stars[1000] = {0};
-int stars_size[1000] = {0};
+#define NUM_STARS   1000
+Vector2i stars[NUM_STARS] = {0};
+int stars_size[NUM_STARS] = {0};
+int stars_image = -1;
 
 typedef enum
 {
@@ -238,11 +240,6 @@ void init()
 
     LOGI(" - Players.");
     players_init();
-    // for(int i = 0; i < MAX_CLIENTS; ++i)
-    // {
-    //     players[i].active = false;
-    //     player_init(&players[i]);
-    // }
 
     LOGI(" - Projectile.");
     projectile_init();
@@ -279,12 +276,6 @@ void init_server()
 
     gfx_image_init();
     players_init();
-    // for(int i = 0; i < MAX_CLIENTS; ++i)
-    // {
-    //     players[i].active = false;
-    //     player_init(&players[i]);
-    // }
-
     projectile_init();
 }
 
@@ -300,12 +291,6 @@ void reset_game()
 {
     projectile_clear_all();
     players_init();
-
-    // for(int i = 0; i < MAX_CLIENTS; ++i)
-    // {
-    //     players[i].active = false;
-    //     player_init(&players[i]);
-    // }
 }
 
 void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _draw)
@@ -811,7 +796,13 @@ void run_server()
 
 void stars_init()
 {
-    for(int i = 0; i < 1000; ++i)
+    unsigned char data[4] = {0};
+    for(int i = 0; i < 4; ++i)
+        data[i] = 0xFF;
+    stars_image = gfx_raw_image_create(data, 1, 1, false);
+    printf("stars image: %d\n", stars_image);
+
+    for(int i = 0; i < NUM_STARS; ++i)
     {
         stars[i].x = rand() % view_width;
         stars[i].y = rand() % view_height;
@@ -821,9 +812,8 @@ void stars_init()
 
 void stars_update()
 {
-    for(int i = 0; i < 1000; ++i)
+    for(int i = 0; i < NUM_STARS; ++i)
     {
-
         stars[i].x -= (stars_size[i]);
         if(stars[i].x <= -5)
         {
@@ -836,10 +826,12 @@ void stars_update()
 
 void stars_draw()
 {
-    for(int i = 0; i < 1000; ++i)
+    gfx_sprite_batch_begin(true);
+    for(int i = 0; i < NUM_STARS; ++i)
     {
-        gfx_draw_rect_xywh(stars[i].x, stars[i].y, 1, 1, COLOR_WHITE, 0, stars_size[i], 1.0, true, true);
+        gfx_sprite_batch_add(stars_image, 0, stars[i].x, stars[i].y, COLOR_WHITE, false, stars_size[i], 0.0, 1.0, true, true, false);
     }
+    gfx_sprite_batch_draw();
 }
 
 void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
