@@ -66,6 +66,11 @@ void editor_draw()
             {
                 GFXImage* img = &gfx_images[player_image];
 
+                if(imgui_button("Hurt Self"))
+                {
+                    player_hurt(player,player->hp_max/5.0);
+                }
+
                 static bool all_active = false;
                 static bool all_ai = false;
 

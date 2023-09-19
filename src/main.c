@@ -672,13 +672,6 @@ void draw_game_start(bool is_client)
 
         if(start)
         {
-            for(int i = 0; i < num_players; ++i)
-            {
-                Player* p = &players[i];
-                if(p == player) continue;
-                p->active = true;
-                p->ai = true;
-            }
             initiate_game = true;
         }
 
@@ -700,6 +693,10 @@ void run_game_end()
 
 void update_game_end(float _dt, bool is_client)
 {
+    stars_update();
+    particles_update(_dt);
+    player_update(&players[winner_index], _dt);
+
     game_end_counter -= _dt;
     if(game_end_counter <= 0.0)
     {
@@ -720,12 +717,25 @@ void draw_game_end(bool is_client)
 
     stars_draw();
 
+    player_draw(&players[winner_index]);
+
     char text[100] = {0};
-    sprintf(text, "'%s' wins!", players[winner_index].settings.name);
+    sprintf(text, "%s wins!", players[winner_index].settings.name);
     float title_scale = 1.0;
     Vector2f title_size = gfx_string_get_size(title_scale, text);
-    gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR_BLUE, title_scale, 0.0, 1.0, true, true, text);
-
+    int num_steps = 20;
+    static int ci = -1;
+    static uint32_t colors[60] = {0};
+    if(ci == -1)
+    {
+        uint32_t color_list[3] = {COLOR_RED, COLOR_GREEN, COLOR_BLUE};
+        gfx_color_gradient(color_list, 3, num_steps, colors);
+        ci = 0;
+    }
+    gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, colors[ci], title_scale, 0.0, 1.0, true, true, text);
+    ci++;
+    if(ci >= num_steps*3)
+        ci = 0;
 
     // players
     // -----------------------------------------------------------------------
@@ -788,6 +798,20 @@ void simulate_client(double dt)
 
 void run_game()
 {
+
+    if(role == ROLE_LOCAL)
+    {
+        player2 = &players[1];
+        player_set_controls();
+        for(int i = 0; i < num_players; ++i)
+        {
+            Player* p = &players[i];
+            if(p == player) continue;
+            p->active = true;
+            if(p != player2) p->ai = true;
+        }
+    }
+
     run_loop(SCREEN_GAME, update_game, draw_game);
 
     // net_client_disconnect();
@@ -937,7 +961,7 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             {
                 if(screen == SCREEN_GAME_START && role == ROLE_LOCAL)
                 {
-                    // initiate_game = true;
+                    initiate_game = true;
                 }
                 // else if(screen == SCREEN_GAME_START && role == ROLE_CLIENT)
                 // {
