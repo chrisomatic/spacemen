@@ -11,6 +11,7 @@
 #include "projectile.h"
 #include "effects.h"
 #include "editor.h"
+#include "main.h"
 
 static ParticleSpawner* particle_spawner; 
 static char particles_file_name[20] = {0};
@@ -49,6 +50,8 @@ void editor_init()
     particle_spawner = particles_spawn_effect(200, 120, &effect, 0, false, true);
 }
 
+#define ASCII_NUMS {"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15"}
+
 void editor_draw()
 {
     imgui_begin_panel("Editor", 10, 10, true);
@@ -61,7 +64,70 @@ void editor_draw()
         {
             case 0: // players
             {
-                imgui_color_picker("Color", &player->settings.color);
+                GFXImage* img = &gfx_images[player_image];
+
+                static bool all_active = false;
+                static bool all_ai = false;
+
+                bool _all_active = all_active;
+                bool _all_ai = all_ai;
+
+                imgui_toggle_button(&all_active, "Toggle All Active");
+                imgui_toggle_button(&all_ai, "Toggle All AI");
+
+                for(int i = 0; i < MAX_PLAYERS; ++i)
+                {
+                    Player* p = &players[i];
+                    if(p == player) continue;
+
+                    if(all_active != _all_active)
+                        p->active = all_active;
+                    if(all_ai != _all_ai)
+                        p->ai = all_ai;
+                }
+
+                char* nums[] = ASCII_NUMS;
+                int sel = imgui_dropdown(nums, MAX_PLAYERS, "Select Player");
+
+                Player* p = &players[sel];
+                bool is_self = (p == player);
+
+                if(!is_self) imgui_toggle_button(&p->active, "Toggle Active");
+                if(!is_self) imgui_toggle_button(&p->ai, "Toggle AI");
+
+                imgui_color_picker("Color", &p->settings.color);
+                imgui_text_box("Name", p->settings.name, PLAYER_NAME_MAX);
+                imgui_number_box("Sprite Index", 0, img->element_count-1, (int*)&p->settings.sprite_index);
+
+                if(!is_self)
+                {
+                    if(imgui_button("Take Control"))
+                    {
+                        if(p != player2)
+                        {
+                            player2 = p;
+                            player_set_controls();
+                        }
+                    }
+                }
+
+                if(is_self)
+                {
+                    if(imgui_button("Save"))
+                    {
+                        memcpy(&menu_settings, &p->settings, sizeof(menu_settings));
+                        settings_save();
+                    }
+                }
+
+                int _num_players = 0;
+                for(int i = 0; i < MAX_PLAYERS; ++i)
+                {
+                    if(players[i].active) _num_players++;
+                }
+                num_players = _num_players;
+
+
             } break;
             case 1: // projectiles
             {

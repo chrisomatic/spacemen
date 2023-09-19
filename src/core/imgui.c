@@ -822,15 +822,12 @@ Vector2f imgui_number_box_formatted(char* label, int min, int max, char* format,
             int range = max - min;
             int thresh = RANGE((view_width/4) / range, 1, 10);
             // printf("thresh: %d\n", thresh);
-
             int dif = ctx->mouse_x - ctx->slider_mouse_x;
             if(ABS(dif) >= thresh)
             {
-                *val += ABS(dif)/dif;
+                *val += (dif/thresh);
                 ctx->slider_mouse_x = ctx->mouse_x;
             }
-
-            // *val += (ctx->mouse_x - ctx->prior_mouse_x);
             *val = RANGE(*val, min,max);
         }
     }

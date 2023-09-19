@@ -23,6 +23,18 @@ typedef enum
     ROLE_SERVER,
 } GameRole;
 
+typedef enum
+{
+    SCREEN_SERVER,
+    SCREEN_HOME,
+    SCREEN_SETTINGS,
+    SCREEN_GAME_START,
+    SCREEN_GAME,
+    SCREEN_GAME_END,
+
+    SCREEN_MAX
+} DisplayScreen;
+
 #define DEBUG_PROJ_GRIDS    0
 
 #define VIEW_WIDTH   1200
@@ -41,11 +53,16 @@ typedef enum
 
 #define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
 
+extern DisplayScreen screen;
 extern bool initialized;
 extern bool back_to_menu;
 extern bool paused;
 extern bool debug_enabled;
 extern bool game_debug_enabled;
+extern int num_lives;
+extern int num_players;
+extern float game_end_counter;
+extern int winner_index;
 
 extern Timer game_timer;
 extern GameRole role;

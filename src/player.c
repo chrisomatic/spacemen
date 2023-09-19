@@ -9,6 +9,7 @@
 
 Player players[MAX_PLAYERS] = {0};
 Player* player = &players[0];
+Player* player2 = NULL;
 
 int player_image = -1;
 int player_count = 1;
@@ -19,6 +20,20 @@ ParticleSpawner* jet_spawner;
 
 void player_init_local()
 {
+    player_set_controls();
+
+    player->active = true;
+
+    ParticleEffect jets = {0};
+    memcpy(&jets, &particle_effects[EFFECT_JETS],sizeof(ParticleEffect));
+    jet_spawner = particles_spawn_effect(player->pos.x,player->pos.y, &jets,0.0,true,false);
+
+}
+
+void player_set_controls()
+{
+    window_controls_clear_keys();
+
     window_controls_add_key(&player->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_W);
     window_controls_add_key(&player->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_S);
     window_controls_add_key(&player->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
@@ -29,44 +44,15 @@ void player_init_local()
     window_controls_add_key(&player->actions[PLAYER_ACTION_RESET].state, GLFW_KEY_R);
     window_controls_add_key(&player->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
 
-    player->active = true;
-
-    ParticleEffect jets = {0};
-    memcpy(&jets, &particle_effects[EFFECT_JETS],sizeof(ParticleEffect));
-    jet_spawner = particles_spawn_effect(100,100, &jets,0.0,true,false);
-
-}
-
-void player_init_local2()
-{
-    Player* p = NULL;
-    for(int i = 0; i < MAX_CLIENTS; ++i)
+    if(player2 != NULL && role == ROLE_LOCAL)
     {
-        if(&players[i] == player)
-            continue;
-        if(players[i].active)
-            continue;
-        p = &players[i];
-        break;
+        window_controls_add_key(&player2->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_UP);
+        window_controls_add_key(&player2->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_DOWN);
+        window_controls_add_key(&player2->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_LEFT);
+        window_controls_add_key(&player2->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_RIGHT);
+        window_controls_add_key(&player2->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_RIGHT_SHIFT);
     }
-
-    if(p == NULL)
-        return;
-
-    p->pos.x = view_width - 100;// + rand()%50;
-    p->pos.y = view_height - 100;// + rand()%50;
-
-    window_controls_add_key(&p->actions[PLAYER_ACTION_FORWARD].state, GLFW_KEY_UP);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_BACKWARD].state, GLFW_KEY_DOWN);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_LEFT);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_RIGHT);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_SHOOT].state, GLFW_KEY_RIGHT_SHIFT);
-    memcpy(p->settings.name, "Decker", strlen("Decker"));
-    p->settings.color = COLOR_BLACK;
-    p->settings.sprite_index = 3;
-    p->active = true;
 }
-
 
 void players_init()
 {
@@ -86,15 +72,26 @@ void players_init()
         memset(p,0, sizeof(Player));
 
         p->active = false;
+        p->deaths = 0;
         p->id = i;
-        p->pos.x = 100.0;
-        p->pos.y = 100.0;
+
+        if(p == player)
+        {
+            p->pos.x = view_width/2.0 + rand()%100;
+            p->pos.y = 100.0 + rand()%200;
+        }
+        else
+        {   p->settings.color = COLOR_RAND;
+            p->pos.x = rand()%view_width;
+            p->pos.y = rand()%view_height;
+        }
+
         p->vel.x = 0.0;
         p->vel.y = 0.0;
         p->angle_deg = 90.0;
         p->accel_factor = 10.0;
         p->turn_rate = 5.0;
-        p->velocity_limit = 500.0;
+        p->velocity_limit = 1000.0;
         p->energy = MAX_ENERGY/2.0;
         p->force_field = false;
         p->hp_max = 100.0;
@@ -104,6 +101,8 @@ void players_init()
         p->hit_box.y = p->pos.y;
         p->hit_box.w = wh;
         p->hit_box.h = wh;
+
+        sprintf(p->settings.name, "Player %d", i);
 
         memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
     }
@@ -166,11 +165,45 @@ void player_update(Player* p, double delta_t)
 
     if(paused) return;
 
+    if(p->deaths >= num_lives) return;
+
     bool fwd   = p->actions[PLAYER_ACTION_FORWARD].state;
     bool bkwd  = p->actions[PLAYER_ACTION_BACKWARD].state;
     bool left  = p->actions[PLAYER_ACTION_LEFT].state;
     bool right = p->actions[PLAYER_ACTION_RIGHT].state;
     bool scum = p->actions[PLAYER_ACTION_SCUM].state;
+
+    if(p->ai)
+    {
+        // go towards player
+        float target_angle = calc_angle_deg(p->pos.x, p->pos.y, player->pos.x, player->pos.y);
+
+        p->angle_deg = fmod(ABS(p->angle_deg), 360.0);
+        float adif = (p->angle_deg - target_angle);
+
+        // printf("angle: %.2f, target: %.2f, adif: %.2f\n", p->angle_deg, target_angle, ABS(adif));
+
+        if(ABS(adif) <= 0.20)
+        {
+            p->actions[PLAYER_ACTION_SHOOT].state = true;
+        }
+        else
+        {
+            p->actions[PLAYER_ACTION_SHOOT].state = false;
+        }
+
+
+        float d = dist(p->pos.x, p->pos.y, player->pos.x, player->pos.y);
+
+        if(ABS(adif) <= 2.0 && d > 200)
+        {
+            fwd = true;
+        }
+
+        float sign = -ABS(adif)/adif;
+        p->angle_deg += p->turn_rate*sign;
+    }
+
 
     float acc_factor_adj = 1.0;
     float turn_factor_adj = 1.0;
@@ -268,16 +301,16 @@ void player_update(Player* p, double delta_t)
             new_angle = PI*2 - vel_angle;
         }
 
+        float vel_adj = 0.8;
         if(!FEQ0(xa))
         {
             float xcomp = p->vel.x / xa;
-            p->vel.x = xcomp*cos(new_angle)*0.8;
+            p->vel.x = xcomp*cos(new_angle)*vel_adj;
         }
-
         if(!FEQ0(ya))
         {
             float ycomp = p->vel.y / ya;
-            p->vel.y = ycomp*sin(new_angle)*0.8;
+            p->vel.y = ycomp*sin(new_angle)*vel_adj;
         }
 
     }
@@ -306,12 +339,7 @@ void player_update(Player* p, double delta_t)
 
     const float pcooldown = 0.1; //seconds
     const float p_energy = 0.0;
-    if(p->actions[PLAYER_ACTION_SHOOT].toggled_on)
-    {
-        projectile_add(p, 0, p_energy);
-        p->proj_cooldown = pcooldown;
-    }
-    else if(p->actions[PLAYER_ACTION_SHOOT].state)
+    if(p->actions[PLAYER_ACTION_SHOOT].state)
     {
         p->proj_cooldown -= delta_t;
         if(p->proj_cooldown <= 0.0)
@@ -344,7 +372,31 @@ void player_update_hit_box(Player* p)
 
 void player_die(Player* p)
 {
+    p->deaths += 1;
     player_reset(p);
+
+    int num_dead = 0;
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        Player* pl = &players[i];
+        if(!pl->active) continue;
+        if(pl->deaths >= num_lives)
+        {
+            num_dead++;
+        }
+        else
+        {
+            winner_index = i;
+        }
+
+    }
+
+    // GAME OVER
+    if(num_dead == (num_players-1))
+    {
+        screen = SCREEN_GAME_END;
+    }
+
 }
 
 void player_hurt(Player* p, float damage)
@@ -360,6 +412,7 @@ void player_hurt(Player* p, float damage)
 void player_draw(Player* p)
 {
     if(!p->active) return;
+    if(p->deaths >= num_lives) return;
 
     GFXImage* img = &gfx_images[player_image];
     if(p->settings.sprite_index >= img->element_count)
@@ -380,11 +433,15 @@ void player_draw(Player* p)
     }
 
     float name_scale = 0.15;
+    float name_x = p->pos.x - p->hit_box.w/2.0;
+    float name_y = p->pos.y + p->hit_box.h/2.0 + 5;
     Vector2f title_size = gfx_string_get_size(name_scale, p->settings.name);
-    gfx_draw_string(p->pos.x - p->hit_box.w/2.0, p->pos.y + p->hit_box.h/2.0 + 5, p->settings.color, name_scale, 0.0, 0.5, true, false, p->settings.name);
+    gfx_draw_string(name_x, name_y, p->settings.color, name_scale, 0.0, 0.5, true, false, p->settings.name);
 
     if(game_debug_enabled)
     {
+        gfx_draw_string(name_x, name_y+title_size.y, p->settings.color, name_scale, 0.0, 0.5, true, false, "%d", p->deaths);
+
         gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
         gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);
 
@@ -398,7 +455,6 @@ void player_draw(Player* p)
         float x1 = x0 + p->vel.x;
         float y1 = y0 + p->vel.y;
         gfx_add_line(x0, y0, x1, y1, COLOR_RED);
-
 
         x1 = x0 + 100*cosf(RAD(p->angle_deg));
         y1 = y0 - 100*sinf(RAD(p->angle_deg));

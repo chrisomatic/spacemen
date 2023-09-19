@@ -25,13 +25,17 @@ TODO:
 // Global Vars
 // =========================
 
+DisplayScreen screen = SCREEN_HOME;
 bool initialized = false;
 bool back_to_home = false;
 bool paused = false;
 bool debug_enabled = false;
 bool game_debug_enabled = false;
 bool initiate_game = false;
-
+int num_lives = 1;
+int num_players = 2;
+float game_end_counter;
+int winner_index = 0;
 int client_id = -1;
 
 Timer game_timer = {0};
@@ -48,18 +52,6 @@ Settings menu_settings = {0};
 Vector2i stars[NUM_STARS] = {0};
 int stars_size[NUM_STARS] = {0};
 int stars_image = -1;
-
-typedef enum
-{
-    SCREEN_SERVER,
-    SCREEN_HOME,
-    SCREEN_SETTINGS,
-    SCREEN_GAME_START,
-    SCREEN_GAME,
-
-    SCREEN_MAX
-} DisplayScreen;
-DisplayScreen screen = SCREEN_HOME;
 
 typedef struct
 {
@@ -99,6 +91,10 @@ void draw_settings(bool is_client);
 void run_game_start();
 void update_game_start(float _dt, bool is_client);
 void draw_game_start(bool is_client);
+
+void run_game_end();
+void update_game_end(float _dt, bool is_client);
+void draw_game_end(bool is_client);
 
 void simulate(double);
 void simulate_client(double);
@@ -159,6 +155,9 @@ int main(int argc, char* argv[])
                 break;
             case SCREEN_GAME:
                 run_game();
+                break;
+            case SCREEN_GAME_END:
+                run_game_end();
                 break;
         }
 
@@ -535,7 +534,6 @@ void draw_settings(bool is_client)
         imgui_text_box("Name", menu_settings.name, PLAYER_NAME_MAX);
         imgui_color_picker("Color", &menu_settings.color);
         GFXImage* img = &gfx_images[player_image];
-        imgui_number_box("Sprite Index", 0, img->element_count-1, &menu_settings.sprite_index);
         imgui_newline();
         if(imgui_button("Return"))
         {
@@ -558,6 +556,13 @@ void run_game_start()
     {
         net_client_init();
     }
+    else
+    {
+        reset_game();
+        player = &players[0];
+        memcpy(&player->settings, &menu_settings, sizeof(Settings));
+        player_init_local();
+    }
 
     run_loop(SCREEN_GAME_START, update_game_start, draw_game_start);
 
@@ -570,16 +575,8 @@ void update_game_start(float _dt, bool is_client)
 
     stars_update();
 
-    // if(!is_client && initiate_game)
-    if(!is_client)
+    if(!is_client && initiate_game)
     {
-        reset_game();
-        player = &players[0];
-
-        memcpy(&player->settings, &menu_settings, sizeof(Settings));
-        player_init_local();
-        player_init_local2();
-
         screen = SCREEN_GAME;
         return;
     }
@@ -645,11 +642,9 @@ void draw_game_start(bool is_client)
 
     stars_draw();
 
-
-    char* text = "press enter";
-
     if(is_client)
     {
+        char* text = "?";
         if(net_client_get_state() == DISCONNECTED)
         {
             text = "sending connect...";
@@ -658,14 +653,89 @@ void draw_game_start(bool is_client)
         {
             text = "waiting...";
         }
-    }
-    // printf("text: %s\n", text);
 
+        float title_scale = 1.0;
+        Vector2f title_size = gfx_string_get_size(title_scale, text);
+        gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR_BLUE, title_scale, 0.0, 1.0, true, true, text);
+
+    }
+    else
+    {
+        int x = (view_width-200)/2.0;
+        int y = (view_height-200)/2.0;
+
+        imgui_begin_panel("Settings", x,y, false);
+            imgui_number_box("Lives", 1, 10, &num_lives);
+            imgui_number_box("Players", 2, MAX_PLAYERS, &num_players);
+            bool start = imgui_button("Start");
+        imgui_end();
+
+        if(start)
+        {
+            for(int i = 0; i < num_players; ++i)
+            {
+                Player* p = &players[i];
+                if(p == player) continue;
+                p->active = true;
+                p->ai = true;
+            }
+            initiate_game = true;
+        }
+
+    }
+
+}
+
+
+void run_game_end()
+{
+    bool is_client = (role == ROLE_CLIENT);
+
+    game_end_counter = 4.0;
+
+    run_loop(SCREEN_GAME_END, update_game_end, draw_game_end);
+
+    net_client_disconnect();
+}
+
+void update_game_end(float _dt, bool is_client)
+{
+    game_end_counter -= _dt;
+    if(game_end_counter <= 0.0)
+    {
+        screen = SCREEN_HOME;
+    }
+}
+
+void draw_game_end(bool is_client)
+{
+    uint8_t r = background_color >> 16;
+    uint8_t g = background_color >> 8;
+    uint8_t b = background_color >> 0;
+
+    gfx_clear_buffer(r,g,b);
+    gfx_clear_lines();
+
+    gfx_draw_rect(&world_box, COLOR_BLACK, 0.0, 1.0, 1.0, false, true);
+
+    stars_draw();
+
+    char text[100] = {0};
+    sprintf(text, "'%s' wins!", players[winner_index].settings.name);
     float title_scale = 1.0;
     Vector2f title_size = gfx_string_get_size(title_scale, text);
     gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR_BLUE, title_scale, 0.0, 1.0, true, true, text);
-}
 
+
+    // players
+    // -----------------------------------------------------------------------
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        Player* p = &players[i];
+        player_draw(p);
+    }
+
+}
 
 // mouse
 int mx=0, my=0;
@@ -720,7 +790,7 @@ void run_game()
 {
     run_loop(SCREEN_GAME, update_game, draw_game);
 
-    net_client_disconnect();
+    // net_client_disconnect();
 }
 
 void update_game(float _dt, bool is_client)
@@ -767,8 +837,7 @@ void draw_game(bool is_client)
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
         Player* p = &players[i];
-        if(p->active)
-            player_draw(p);
+        player_draw(p);
     }
 
 
@@ -868,7 +937,7 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             {
                 if(screen == SCREEN_GAME_START && role == ROLE_LOCAL)
                 {
-                    initiate_game = true;
+                    // initiate_game = true;
                 }
                 // else if(screen == SCREEN_GAME_START && role == ROLE_CLIENT)
                 // {

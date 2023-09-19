@@ -34,9 +34,11 @@ typedef struct
 typedef struct
 {
     bool active;
+    bool ai;
 
     uint8_t id;
 
+    int deaths;
     float hp;
     float hp_max;
 
@@ -73,6 +75,7 @@ typedef struct
 
 extern Player players[MAX_PLAYERS];
 extern Player* player;
+extern Player* player2;
 extern int player_count;
 extern int player_image;
 
@@ -81,7 +84,7 @@ Player* player_get_by_id(uint8_t id);
 void player_set_active_state(uint8_t id, bool active);
 
 void player_init_local();
-void player_init_local2();
+void player_set_controls();
 void player_update(Player* p, double delta_t);
 void player_add_energy(Player* p, float e);
 void player_update_hit_box(Player* p);
