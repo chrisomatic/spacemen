@@ -598,7 +598,7 @@ int imgui_button_select(int num_buttons, char* button_labels[], char* label)
     return selection;
 }
 
-int imgui_dropdown(char* options[], int num_options, char* label)
+int imgui_dropdown(char* options[], int num_options, char* label, int* selected_index)
 {
     if(num_options < 0 || num_options >= 32)
         return 0;
@@ -657,6 +657,10 @@ int imgui_dropdown(char* options[], int num_options, char* label)
         {
             clear_active();
         }
+    }
+    else if(selected_index != NULL)
+    {
+        ctx->dropdown_props.selected_index = *selected_index;
     }
 
     int display_count = active ? num_options +1 : 1;
@@ -1047,7 +1051,7 @@ void imgui_theme_selector()
     for(int i = 0; i < num_files; ++i)
         theme_file_ptrs[i] = (char*)theme_files[i];
 
-    int selected_theme = imgui_dropdown(theme_file_ptrs, num_files, "Theme");
+    int selected_theme = imgui_dropdown(theme_file_ptrs, num_files, "Theme", NULL);
     if(selected_theme != prior_selected_theme)
     {
         imgui_load_theme(theme_file_ptrs[selected_theme]);

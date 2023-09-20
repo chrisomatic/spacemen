@@ -760,6 +760,40 @@ void simulate(double dt)
 
         window_get_mouse_view_coords(&mx, &my);
 
+        if(role == ROLE_LOCAL)
+        {
+            bool leftc = window_mouse_left_went_down();
+            bool rightc = window_mouse_right_went_down();
+            if(leftc || rightc)
+            {
+                Rect r = {0};
+                r.x = mx;
+                r.y = my;
+                r.w = 10;
+                r.h = 10;
+                for(int i = 0; i < MAX_PLAYERS; ++i)
+                {
+                    Player* p = &players[i];
+                    if(player == p) continue;
+                    if(!p->active) continue;
+                    if(p->dead) continue;
+
+                    if(rectangles_colliding(&r, &p->hit_box))
+                    {
+                        player_selection = p->id;
+                        if(leftc)
+                        {
+                            player2 = p;
+                            player_set_controls();
+                        }
+                        if(rightc)
+                        {
+                            p->ai = !p->ai;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // player_update(player, dt);
@@ -808,7 +842,7 @@ void run_game()
             Player* p = &players[i];
             if(p == player) continue;
             p->active = true;
-            if(p != player2) p->ai = true;
+            // if(p != player2) p->ai = true;
         }
     }
 
@@ -835,6 +869,25 @@ void update_game(float _dt, bool is_client)
     }
 }
 
+void sort_players(Player* lst[MAX_PLAYERS])
+{
+    // insertion sort
+    int i, j;
+    Player* key = NULL;
+    for(i = 1; i < MAX_PLAYERS; i++) 
+    {
+        key = lst[i];
+        j = i - 1;
+
+        while(j >= 0 && lst[j]->deaths > (key)->deaths)
+        {
+            lst[j+1] = lst[j];
+            j = j - 1;
+        }
+        lst[j+1] = key;
+    }
+}
+
 
 void draw_game(bool is_client)
 {
@@ -858,14 +911,52 @@ void draw_game(bool is_client)
 
     // players
     // -----------------------------------------------------------------------
-    for(int i = 0; i < MAX_CLIENTS; ++i)
+    for(int i = 0; i < MAX_PLAYERS; ++i)
     {
         Player* p = &players[i];
         player_draw(p);
     }
 
-
     gfx_draw_lines();
+
+    if(true)
+    {
+        Player* player_list[MAX_PLAYERS] = {0};
+        for(int i = 0; i < MAX_PLAYERS; ++i)
+            player_list[i] = &players[i];
+
+        // printf("players    : ");
+        // for(int i = 0; i < MAX_PLAYERS; ++i)
+        //     printf("%p,  ", &players[i]);
+        // printf("\n");
+
+        // printf("before sort: ");
+        // for(int i = 0; i < MAX_PLAYERS; ++i)
+        //     printf("%p,  ", player_list[i]);
+        // printf("\n");
+
+        sort_players(player_list);
+
+        // printf("after  sort: ");
+        // for(int i = 0; i < MAX_PLAYERS; ++i)
+        //     printf("%p,  ", player_list[i]);
+        // printf("\n------------------------------------------------------------\n");
+
+        float scale = 0.1;
+        Vector2f size = gfx_string_get_size(scale, "P");
+        float x = 10.0;
+        float y = 10.0;
+        for(int i = 0; i < MAX_PLAYERS; ++i)
+        {
+            Player* p = player_list[i];
+            if(p->active)
+            {
+                uint32_t color = p->dead ? COLOR_RED : COLOR_WHITE;
+                gfx_draw_string(x, y, color, scale, 0.0, 1.0, true, true, "%d | %s", p->deaths, p->settings.name);
+                y += size.y + 3;
+            }
+        }
+    }
 
 
     if(game_debug_enabled)
@@ -943,7 +1034,12 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             }
             if(key == GLFW_KEY_ESCAPE)
             {
-                if(screen != SCREEN_HOME)
+
+                if(debug_enabled)
+                {
+                    debug_enabled = false;
+                }
+                else if(screen != SCREEN_HOME)
                 {
                     back_to_home = true;
                     screen = SCREEN_HOME;

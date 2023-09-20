@@ -71,6 +71,7 @@ void players_init()
         Player* p = &players[i];
         memset(p,0, sizeof(Player));
 
+        p->dead = false;
         p->active = false;
         p->deaths = 0;
         p->id = i;
@@ -165,7 +166,7 @@ void player_update(Player* p, double delta_t)
 
     if(paused) return;
 
-    if(p->deaths >= num_lives) return;
+    if(p->dead) return;
 
     bool fwd   = p->actions[PLAYER_ACTION_FORWARD].state;
     bool bkwd  = p->actions[PLAYER_ACTION_BACKWARD].state;
@@ -373,14 +374,23 @@ void player_update_hit_box(Player* p)
 void player_die(Player* p)
 {
     p->deaths += 1;
-    player_reset(p);
+    if(p->deaths >= num_lives)
+    {
+        p->dead = true;
+        printf("%s is dead!\n", p->settings.name);
+    }
+    else
+    {
+        player_reset(p);
+    }
 
     int num_dead = 0;
     for(int i = 0; i < MAX_PLAYERS; ++i)
     {
         Player* pl = &players[i];
         if(!pl->active) continue;
-        if(pl->deaths >= num_lives)
+        // if(pl->deaths >= num_lives)
+        if(pl->dead)
         {
             num_dead++;
         }
@@ -412,7 +422,7 @@ void player_hurt(Player* p, float damage)
 void player_draw(Player* p)
 {
     if(!p->active) return;
-    if(p->deaths >= num_lives) return;
+    if(p->dead) return;
 
     GFXImage* img = &gfx_images[player_image];
     if(p->settings.sprite_index >= img->element_count)
@@ -440,7 +450,7 @@ void player_draw(Player* p)
 
     if(game_debug_enabled)
     {
-        gfx_draw_string(name_x, name_y+title_size.y, p->settings.color, name_scale, 0.0, 0.5, true, false, "%d", p->deaths);
+        gfx_draw_string(name_x, name_y+title_size.y, p->settings.color, name_scale, 0.0, 0.5, true, true, "%d", p->deaths);
 
         gfx_draw_rect(&p->hit_box_prior, COLOR_GREEN, 0, 1.0, 1.0, false, true);
         gfx_draw_rect(&p->hit_box, COLOR_BLUE, 0, 1.0, 1.0, false, true);

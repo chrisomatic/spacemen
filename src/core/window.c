@@ -709,6 +709,18 @@ bool window_mouse_left_went_up()
     return went_up_this_frame;
 }
 
+bool window_mouse_right_went_down()
+{
+    bool went_down_this_frame = (mouse_right.action_prior == GLFW_RELEASE && mouse_right.action == GLFW_PRESS);
+    return went_down_this_frame;
+}
+
+bool window_mouse_right_went_up()
+{
+    bool went_up_this_frame = (mouse_right.action_prior == GLFW_PRESS && mouse_right.action == GLFW_RELEASE);
+    return went_up_this_frame;
+}
+
 void window_mouse_set_cursor_ibeam()
 {
     glfwSetCursor(window,cursor_ibeam);

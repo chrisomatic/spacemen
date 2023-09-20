@@ -240,6 +240,7 @@ void projectile_handle_collisions(float delta_t)
         {
             if(!players[j].active) continue;
             if(p->player_id == players[j].id) continue;
+            if(players[j].dead) continue;
 
             bool hit = are_rects_colliding(&p->hit_box_prior, &p->hit_box, &players[j].hit_box);
             if(hit)
