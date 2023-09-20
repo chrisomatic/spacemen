@@ -1112,7 +1112,7 @@ int net_client_connect_recv_data()
                 if(memcmp(srv_client_salt,client.client_salt,8) != 0)
                 {
                     LOGN("Server sent client salt doesn't match actual client salt");
-                    return -1;
+                    return CONN_RC_INVALID_SALT;
                 }
 
                 memcpy(client.server_salt,&srvpkt.data[8], 8);
@@ -1120,6 +1120,7 @@ int net_client_connect_recv_data()
 
                 client.state = SENDING_CHALLENGE_RESPONSE;
                 client_send(PACKET_TYPE_CONNECT_CHALLENGE_RESP);
+                return CONN_RC_CHALLENGED;
             } break;
             case PACKET_TYPE_CONNECT_ACCEPTED:
             {
@@ -1131,10 +1132,11 @@ int net_client_connect_recv_data()
             {
                 LOGN("Rejection Reason: %s (%02X)", connect_reject_reason_to_str(srvpkt.data[0]), srvpkt.data[0]);
                 client.state = DISCONNECTED; // TODO: is this okay?
+                return CONN_RC_REJECTED;
             } break;
         }
     }
-    return -2;
+    return CONN_RC_NO_DATA;
 }
 
 void net_client_update()

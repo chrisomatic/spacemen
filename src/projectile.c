@@ -3,6 +3,7 @@
 #include "math2d.h"
 #include "window.h"
 #include "gfx.h"
+#include "core/text_list.h"
 #include "log.h"
 #include "player.h"
 #include "projectile.h"
@@ -245,6 +246,8 @@ void projectile_handle_collisions(float delta_t)
             bool hit = are_rects_colliding(&p->hit_box_prior, &p->hit_box, &players[j].hit_box);
             if(hit)
             {
+                text_list_add(text_lst, 1.0, "%s hit %s", player[p->player_id].settings.name, player[j].settings.name);
+
                 player_hurt(&players[j], p->damage);
                 p->dead = true;
                 break;

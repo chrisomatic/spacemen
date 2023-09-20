@@ -14,6 +14,7 @@
 #include "timer.h"
 #include "math2d.h"
 #include "settings.h"
+#include "core/text_list.h"
 
 typedef enum
 {
@@ -52,6 +53,8 @@ typedef enum
 #define FREE(p) do{ if(p != NULL) {free(p); p = NULL;} }while(0)
 
 #define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
+
+extern text_list_t* text_lst;
 
 extern DisplayScreen screen;
 extern bool initialized;

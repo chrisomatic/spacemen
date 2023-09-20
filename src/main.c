@@ -14,6 +14,7 @@
 #include "effects.h"
 #include "settings.h"
 #include "editor.h"
+#include "text_list.h"
 
 /*
 TODO:
@@ -24,6 +25,8 @@ TODO:
 // =========================
 // Global Vars
 // =========================
+
+text_list_t* text_lst = NULL;
 
 DisplayScreen screen = SCREEN_HOME;
 bool initialized = false;
@@ -37,6 +40,9 @@ int num_players = 2;
 float game_end_counter;
 int winner_index = 0;
 int client_id = -1;
+
+// mouse
+int mx=0, my=0;
 
 Timer game_timer = {0};
 GameRole role;
@@ -128,6 +134,9 @@ int main(int argc, char* argv[])
 
     if(role != ROLE_SERVER)
         init();
+
+    text_lst = text_list_init(50, 10.0, view_height - 10.0, 0.12, COLOR_WHITE, false, TEXT_ALIGN_LEFT);
+    // text_lst = text_list_init(100, view_width-10.0, view_height-10.0, 0.1, COLOR_WHITE, false, TEXT_ALIGN_RIGHT);
 
     for(;;)
     {
@@ -337,7 +346,6 @@ void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _d
 
 }
 
-
 void run_home()
 {
     window_controls_clear_keys();
@@ -351,6 +359,12 @@ void run_home()
 void update_home(float _dt, bool is_client)
 {
     stars_update();
+    text_list_update(text_lst, _dt);
+
+    // if(rand()%1 == 0)
+    // {
+    //     text_list_add(text_lst, 3.0, "test %d", rand()%30);
+    // }
 }
 
 void draw_home(bool is_client)
@@ -457,6 +471,7 @@ void draw_home(bool is_client)
 
     gfx_draw_image_color_mask(player_image, menu_settings.sprite_index, sel_x, sel_y, menu_settings.color, 1.0, 0.0, 1.0, true, true);
 
+    text_list_draw(text_lst);
 
 #if 0
     {
@@ -511,6 +526,7 @@ void run_settings()
 void update_settings(float _dt, bool is_client)
 {
     stars_update();
+    text_list_update(text_lst, _dt);
 }
 
 void draw_settings(bool is_client)
@@ -543,6 +559,8 @@ void draw_settings(bool is_client)
 
     gfx_draw_image_color_mask(player_image, menu_settings.sprite_index, view_width/2.0, 200, menu_settings.color, 3.0, 0.0, 1.0, true, true);
 
+    text_list_draw(text_lst);
+
 }
 
 void run_game_start()
@@ -572,8 +590,11 @@ void run_game_start()
 
 void update_game_start(float _dt, bool is_client)
 {
+    static float retry_time = 0.0;
+
 
     stars_update();
+    text_list_update(text_lst, _dt);
 
     if(!is_client && initiate_game)
     {
@@ -588,8 +609,15 @@ void update_game_start(float _dt, bool is_client)
 
             if(net_client_get_state() == DISCONNECTED)
             {
-                net_client_connect_request();
+                retry_time -= _dt;
+                if(retry_time <= 0.0)
+                {
+                    net_client_connect_request();
+                    text_list_add(text_lst, 2.0, "Sent connect request.");
+                    retry_time = 2.0;
+                }
             }
+
             else
             {
                 int rc = net_client_connect_data_waiting();
@@ -600,14 +628,27 @@ void update_game_start(float _dt, bool is_client)
                 }
                 else if(rc == 1)
                 {
+                    text_list_add(text_lst, 2.0, "Timedout waiting for data.");
                     return;
                 }
                 else if(rc == 2)
                 {
-                    int _id = net_client_connect_recv_data();
-                    if(_id >= 0)
+                    int rcv = net_client_connect_recv_data();
+                    if(rcv >= 0)
                     {
-                        client_id = _id;
+                        client_id = rcv;
+                        text_list_add(text_lst, 5.0, "Connected, client id: %d.", rcv);
+                    }
+                    else
+                    {
+                        if(rcv == CONN_RC_CHALLENGED)
+                            text_list_add(text_lst, 2.0, "Received connect challenge.");
+                        else if(rcv == CONN_RC_INVALID_SALT)
+                            text_list_add(text_lst, 2.0, "Invalid salt.");
+                        else if(rcv == CONN_RC_REJECTED)
+                            text_list_add(text_lst, 2.0, "Connection rejected.");
+                        else if(rcv == CONN_RC_NO_DATA)
+                            text_list_add(text_lst, 2.0, "No data.");
                     }
                 }
             }
@@ -645,15 +686,14 @@ void draw_game_start(bool is_client)
     if(is_client)
     {
         char* text = "?";
-        if(net_client_get_state() == DISCONNECTED)
+        // if(net_client_get_state() == DISCONNECTED)
+        // {
+        //     text = "sending connect...";
+        // }
+        // else
         {
-            text = "sending connect...";
+            text = "Waiting for connection...";
         }
-        else
-        {
-            text = "waiting...";
-        }
-
         float title_scale = 1.0;
         Vector2f title_size = gfx_string_get_size(title_scale, text);
         gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR_BLUE, title_scale, 0.0, 1.0, true, true, text);
@@ -677,6 +717,8 @@ void draw_game_start(bool is_client)
 
     }
 
+    text_list_draw(text_lst);
+
 }
 
 
@@ -694,6 +736,8 @@ void run_game_end()
 void update_game_end(float _dt, bool is_client)
 {
     stars_update();
+    text_list_update(text_lst, _dt);
+
     particles_update(_dt);
     player_update(&players[winner_index], _dt);
 
@@ -745,10 +789,8 @@ void draw_game_end(bool is_client)
         player_draw(p);
     }
 
+    text_list_draw(text_lst);
 }
-
-// mouse
-int mx=0, my=0;
 
 void simulate(double dt)
 {
@@ -757,6 +799,7 @@ void simulate(double dt)
         projectile_update(dt);
         particles_update(dt);
         stars_update();
+        text_list_update(text_lst, dt);
 
         window_get_mouse_view_coords(&mx, &my);
 
@@ -808,6 +851,8 @@ void simulate(double dt)
 void simulate_client(double dt)
 {
     stars_update();
+    text_list_update(text_lst, dt);
+
     //projectile_update(dt);
     //player_update(player,dt); // client-side prediction
     player_handle_net_inputs(player, dt);
@@ -958,6 +1003,7 @@ void draw_game(bool is_client)
         }
     }
 
+    text_list_draw(text_lst);
 
     if(game_debug_enabled)
     {
@@ -968,6 +1014,7 @@ void draw_game(bool is_client)
     {
         editor_draw();
     }
+
 }
 
 

@@ -5,6 +5,7 @@
 #include "core/gfx.h"
 #include "core/window.h"
 #include "core/particles.h"
+#include "core/text_list.h"
 #include "effects.h"
 
 Player players[MAX_PLAYERS] = {0};
@@ -378,10 +379,12 @@ void player_die(Player* p)
     {
         p->dead = true;
         printf("%s is dead!\n", p->settings.name);
+        text_list_add(text_lst, 4.0, "%s is dead", p->settings.name);
     }
     else
     {
         player_reset(p);
+        text_list_add(text_lst, 3.0, "%s died", p->settings.name);
     }
 
     int num_dead = 0;
@@ -389,7 +392,6 @@ void player_die(Player* p)
     {
         Player* pl = &players[i];
         if(!pl->active) continue;
-        // if(pl->deaths >= num_lives)
         if(pl->dead)
         {
             num_dead++;
@@ -411,6 +413,9 @@ void player_die(Player* p)
 
 void player_hurt(Player* p, float damage)
 {
+    if(!p->active) return;
+    if(p->dead) return;
+
     p->hp -= damage;
     if(p->hp <= 0)
     {

@@ -15,6 +15,10 @@
 #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
 #endif
 
+#define CONN_RC_CHALLENGED    (-1)
+#define CONN_RC_INVALID_SALT  (-2)
+#define CONN_RC_REJECTED      (-3)
+#define CONN_RC_NO_DATA       (-4)
 
 typedef enum
 {

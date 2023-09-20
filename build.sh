@@ -11,6 +11,7 @@ gcc core/gfx.c \
     core/window.c \
     core/imgui.c \
     core/glist.c \
+    core/text_list.c \
     core/socket.c \
     core/particles.c \
     player.c \
