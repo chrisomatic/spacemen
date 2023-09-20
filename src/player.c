@@ -202,8 +202,17 @@ void player_update(Player* p, double delta_t)
             fwd = true;
         }
 
-        float sign = -ABS(adif)/adif;
-        p->angle_deg += p->turn_rate*sign;
+        if(!FEQ0(adif))
+        {
+            float sign = -ABS(adif)/adif;
+            p->angle_deg += p->turn_rate*sign;
+        }
+
+        if(isnan(p->angle_deg))
+        {
+            printf("%s angle was nan!\n", p->settings.name);
+            p->angle_deg = 0.0;
+        }
     }
 
 
@@ -475,11 +484,11 @@ void player_draw(Player* p)
         y1 = y0 - 100*sinf(RAD(p->angle_deg));
         gfx_add_line(x0, y0, x1, y1, COLOR_CYAN);
 
-        if(p == player)
-        {
-            Vector2f l = gfx_draw_string(10.0, view_height-30.0, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->vel.x, p->vel.y);
-            gfx_draw_string(10.0, view_height-30.0+l.y, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->pos.x, p->pos.y);
-        }
+        // if(p == player)
+        // {
+        //     Vector2f l = gfx_draw_string(10.0, view_height-30.0, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->vel.x, p->vel.y);
+        //     gfx_draw_string(10.0, view_height-30.0+l.y, COLOR_BLACK, 0.15, 0.0, 1.0, true, false, "%8.2f, %8.2f", p->pos.x, p->pos.y);
+        // }
     }
 
     if(p == player)

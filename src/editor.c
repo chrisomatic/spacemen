@@ -100,7 +100,7 @@ void editor_draw()
                 Player* p = &players[player_selection];
                 bool is_self = (p == player);
 
-                imgui_text("Position: %.1f, %.1f", p->pos.x, p->pos.y);
+                imgui_text("Position: %.1f, %.1f (%.2f)", p->pos.x, p->pos.y, p->angle_deg);
 
                 if(imgui_button("Reset Position"))
                 {

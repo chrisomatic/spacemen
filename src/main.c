@@ -1031,7 +1031,6 @@ void stars_init()
     for(int i = 0; i < 4; ++i)
         data[i] = 0xFF;
     stars_image = gfx_raw_image_create(data, 1, 1, false);
-    printf("stars image: %d\n", stars_image);
 
     for(int i = 0; i < NUM_STARS; ++i)
     {
