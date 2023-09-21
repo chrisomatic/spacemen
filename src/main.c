@@ -338,6 +338,7 @@ void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _d
             if(_update != NULL) _update(dt, is_client);
             accum -= dt;
         }
+
         if (_draw != NULL) {
             _draw(is_client);
         }

@@ -86,7 +86,7 @@ void init_timer(void)
 
 static double get_time()
 {
-    return (double) (get_timer_value() - _timer.offset) / _timer.frequency;
+    return (double) (get_timer_value() - _timer.offset) / (double)_timer.frequency;
 }
 
 void timer_begin(Timer* timer)
@@ -113,11 +113,10 @@ void timer_wait_for_frame(Timer* timer)
     for(;;)
     {
         now = get_time();
-        //printf("now: %f, time_last: %f, spf: %f\n",now, timer->time_last, timer->spf);
         if(now >= timer->time_last + timer->spf)
             break;
         
-        usleep(100);
+        //usleep(100);
     }
 
     timer->frame_fps = 1.0f / (now - timer->time_last);

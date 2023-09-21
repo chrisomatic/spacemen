@@ -77,7 +77,7 @@ bool settings_load()
         if(!is_value && c == ':')
         {
             is_value = !is_value;
-            label[lindex++] == c;
+            label[lindex++] = c;
             continue;
         }
 
