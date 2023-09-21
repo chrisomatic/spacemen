@@ -8,8 +8,10 @@
 #include <io.h>
 #pragma comment(lib, "User32.lib")
 #else
+#define BOOL bool
 #include <unistd.h>
 #endif
+
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -303,7 +303,6 @@ void reset_game()
 
 void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _draw)
 {
-    printf("Starting run loop\n");
     bool is_client = (role == ROLE_CLIENT);
 
     timer_set_fps(&game_timer,TARGET_FPS);
@@ -352,7 +351,6 @@ void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _d
 
 void run_home()
 {
-    printf("Config window controls\n");
     window_controls_clear_keys();
     window_controls_add_key(&menu_keys.up,    GLFW_KEY_W);
     window_controls_add_key(&menu_keys.down,  GLFW_KEY_S);
