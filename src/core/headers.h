@@ -5,7 +5,10 @@
 #include <windows.h>
 #include <tchar.h>
 #include <strsafe.h>
+#include <io.h>
 #pragma comment(lib, "User32.lib")
+#else
+#include <unistd.h>
 #endif
 
 #include <stdio.h>
@@ -18,4 +21,3 @@
 #include <math.h>
 #include <errno.h> 
 #include <time.h>
-#include <unistd.h>

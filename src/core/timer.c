@@ -59,7 +59,7 @@ void init_timer(void)
 {
 #if _WIN32
     uint64_t freq;
-    QueryPerformanceCounter((LARGE_INTEGER*)&freq);
+    QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
     _timer.monotonic = false;
     _timer.frequency = freq;
 #else
@@ -113,8 +113,10 @@ void timer_wait_for_frame(Timer* timer)
     for(;;)
     {
         now = get_time();
+        //printf("now: %f, time_last: %f, spf: %f\n",now, timer->time_last, timer->spf);
         if(now >= timer->time_last + timer->spf)
             break;
+        
         usleep(100);
     }
 

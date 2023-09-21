@@ -9,6 +9,8 @@ flat in uint mask_color0;
 flat in uint blending_mode0;
 in vec2 to_light_vector[16];
 
+out vec4 outColor;
+
 uniform sampler2D images[16];
 uniform vec3 ambient_color;
 uniform vec3 light_color[16];
@@ -67,5 +69,5 @@ void main() {
         my_color.a = 0.0; // additive
     }
 
-    gl_FragColor = my_color;
+    outColor = my_color;
 }

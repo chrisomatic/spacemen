@@ -6,14 +6,14 @@
 #define F_OK 0
 #define access _access
 #define MAX_SIZE 32
+#include <io.h>
 #else
 #include <dirent.h>
+#include <unistd.h>
 #endif
 
-#include <unistd.h>
 
-
-static bool io_file_exists(char* file_path)
+static BOOL io_file_exists(char* file_path)
 {
     return (access(file_path, F_OK) == 0);
 }

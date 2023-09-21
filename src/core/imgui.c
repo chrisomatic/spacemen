@@ -569,7 +569,10 @@ int imgui_button_select(int num_buttons, char* button_labels[], char* label)
 
     uint32_t hash = hash_str(_str,strlen(_str),0x0);
     IntLookup* lookup = get_int_lookup(hash);
-    int *val = &lookup->val;
+    if (!lookup)
+        return;
+
+    int* val = &lookup->val;
 
     bool results[32] = {false};
     int selection = 0;
@@ -608,6 +611,9 @@ int imgui_dropdown(char* options[], int num_options, char* label, int* selected_
 
     uint32_t hash = hash_str(_str,strlen(_str),0x0);
     IntLookup* lookup = get_int_lookup(hash);
+    if (!lookup)
+        return 0;
+ 
     int *val = &lookup->val;
 
     char new_label[32] = {0};
@@ -809,7 +815,10 @@ Vector2f imgui_number_box_formatted(char* label, int min, int max, char* format,
     mask_off_hidden(label, new_label, 32);
 
     IntLookup* lookup = get_int_lookup(hash);
-    int *val = &lookup->val;
+    if (!lookup)
+        return;
+
+    int* val = &lookup->val;
 
     if(*result >= min && *result <= max)
         *val = *result;
@@ -1384,6 +1393,8 @@ static IntLookup* get_int_lookup(uint32_t hash)
             return lookup;
         }
     }
+
+    return NULL;
 }
 
 static void imgui_slider_float_internal(char* label, float min, float max, float* result, char* format)
@@ -1404,6 +1415,8 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
     int slider_index = -1;
 
     IntLookup* lookup = get_int_lookup(hash);
+    if (!lookup)
+        return;
 
     ctx->curr.w = theme.slider_width;
     ctx->curr.h = text_size.y + 2*theme.text_padding;
@@ -1413,6 +1426,7 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
     val -= min;
     val /= (max-min);
     val *= (float)(ctx->curr.w - theme.slider_handle_width);
+    
     lookup->val = roundf(val);
 
     int *slider_x = &lookup->val;

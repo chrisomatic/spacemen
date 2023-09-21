@@ -30,7 +30,7 @@
 
 #include "socket.h"
 
-bool socket_initalize()
+bool socket_initialize()
 {
 #if PLATFORM == PLATFORM_WINDOWS
     WSADATA WsaData;
@@ -53,7 +53,11 @@ bool socket_create(int* socket_handle)
 
     if(*socket_handle <= 0 )
     {
-        printf("Failed to create socket.\n");
+        int errorcode = *socket_handle;
+#if PLATFORM == PLATFORM_WINDOWS
+        errorcode = WSAGetLastError();
+#endif
+        printf("Failed to create socket. Error: %d\n", errorcode);
         return false;
     }
 

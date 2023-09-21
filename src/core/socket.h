@@ -12,7 +12,7 @@ typedef struct
     uint16_t port;
 } Address;
 
-bool socket_initalize();
+bool socket_initialize();
 void socket_shutdown();
 
 bool socket_create(int* socket_handle);

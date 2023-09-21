@@ -1,6 +1,7 @@
 #include "headers.h"
 
 #if _WIN32
+#include <WinSock2.h>
 #else
 #include <sys/select.h>
 #endif
@@ -197,6 +198,7 @@ static void print_packet_simple(Packet* pkt, const char* hdr)
 
 static bool has_data_waiting(int socket)
 {
+
     fd_set readfds;
 
     //clear the socket set  
@@ -444,19 +446,19 @@ static void server_send(PacketType type, ClientInfo* cli)
             net_send(&server.info,&cli->address,&pkt);
             break;
         case PACKET_TYPE_SETTINGS:
-
+        {
             int num_clients = 0;
 
             pkt.data_len = 1;
 
-            for(int i = 0; i < MAX_CLIENTS; ++i)
+            for (int i = 0; i < MAX_CLIENTS; ++i)
             {
-                if(server.clients[i].state == CONNECTED)
+                if (server.clients[i].state == CONNECTED)
                 {
-                    pack_u8(&pkt,(uint8_t)i);
-                    pack_u8(&pkt,players[i].settings.sprite_index);
-                    pack_u32(&pkt,players[i].settings.color);
-                    pack_string(&pkt,players[i].settings.name, PLAYER_NAME_MAX);
+                    pack_u8(&pkt, (uint8_t)i);
+                    pack_u8(&pkt, players[i].settings.sprite_index);
+                    pack_u32(&pkt, players[i].settings.color);
+                    pack_string(&pkt, players[i].settings.name, PLAYER_NAME_MAX);
 
                     num_clients++;
                 }
@@ -464,9 +466,9 @@ static void server_send(PacketType type, ClientInfo* cli)
 
             pkt.data[0] = num_clients;
 
-            net_send(&server.info,&cli->address,&pkt);
+            net_send(&server.info, &cli->address, &pkt);
 
-            break;
+        }   break;
         case PACKET_TYPE_DISCONNECT:
         {
             cli->state = DISCONNECTED;
@@ -528,6 +530,8 @@ static void server_update_players()
 int net_server_start()
 {
     // init
+    socket_initialize();
+
     memset(server.clients, 0, sizeof(ClientInfo)*MAX_CLIENTS);
     server.num_clients = 0;
 
@@ -872,6 +876,8 @@ bool net_client_set_server_ip(char* address)
 // client information
 bool net_client_init()
 {
+    socket_initialize();
+
     int sock;
 
     LOGN("Creating socket.");
