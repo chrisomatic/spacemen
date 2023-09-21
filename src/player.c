@@ -83,7 +83,11 @@ void players_init()
             p->pos.y = 100.0 + rand()%200;
         }
         else
-        {   p->settings.color = COLOR_RAND;
+        {   p->settings.color = COLOR_RAND2;
+            // p->pos.x = player->pos.x - 100;
+            // p->pos.y = player->pos.y - 100;
+            // p->ai = true;
+
             p->pos.x = rand()%view_width;
             p->pos.y = rand()%view_height;
         }
@@ -177,42 +181,101 @@ void player_update(Player* p, double delta_t)
 
     if(p->ai)
     {
-        // go towards player
-        float target_angle = calc_angle_deg(p->pos.x, p->pos.y, player->pos.x, player->pos.y);
-
-        p->angle_deg = fmod(ABS(p->angle_deg), 360.0);
-        float adif = (p->angle_deg - target_angle);
-
-        // printf("angle: %.2f, target: %.2f, adif: %.2f\n", p->angle_deg, target_angle, ABS(adif));
-
-        if(ABS(adif) <= 0.20)
+        int count = num_players-1;
+        if(count > 0)
         {
-            p->actions[PLAYER_ACTION_SHOOT].state = true;
-        }
-        else
-        {
-            p->actions[PLAYER_ACTION_SHOOT].state = false;
-        }
 
 
-        float d = dist(p->pos.x, p->pos.y, player->pos.x, player->pos.y);
 
-        if(ABS(adif) <= 2.0 && d > 200)
-        {
-            fwd = true;
+            Player* target_player = NULL;
+            float min_d = view_width*view_height;
+
+            for(int i = 0; i < MAX_PLAYERS; ++i)
+            {
+                if(!players[i].active) continue;
+                if(players[i].dead) continue;
+                if(players[i].id == p->id) continue;
+
+                float d = dist(p->pos.x, p->pos.y, players[i].pos.x, players[i].pos.y);
+                if(d < min_d)
+                {
+                    target_player = &players[i];
+                    min_d = d;
+                }
+            }
+
+            if(target_player != NULL)
+            {
+                float target_angle = calc_angle_deg(p->pos.x, p->pos.y, target_player->pos.x, target_player->pos.y);
+
+                float dif = target_angle - p->angle_deg;
+                float adif = ABS(dif);
+                if(adif > 0.5 && rand()%11<=9)
+                {
+
+                    float adj = 1.0;
+                    if(dif < 0) adj = -1.0;
+
+                    if(target_angle <= 360.0 && target_angle >= 270.0)
+                    {
+                        if(dif < 0 || adif > 180)
+                        {
+                            adj = -1.0;
+                        }
+                        else
+                        {
+                            adj = 1.0;
+                        }
+                    }
+                    if(target_angle <= 90.0 && target_angle >= 0.0)
+                    {
+                        if(dif < 0 && adif < 180)
+                        {
+                            adj = -1.0;
+                        }
+                        else
+                        {
+                            adj = 1.0;
+                        }
+                    }
+
+                    adj *= p->turn_rate;
+                    if(adif < ABS(adj))
+                    {
+                        adj /= 4.0;
+                    }
+
+                    // text_list_add(text_lst, 2.0, "%.2f, %.2f, %+.0f  (%.2f)",p->angle_deg, target_angle, adj, dif);
+                    p->angle_deg += (adj*2);
+                    p->angle_deg = normalize_angle_deg(p->angle_deg);
+
+                    p->actions[PLAYER_ACTION_SHOOT].state = false;
+                }
+
+                if(adif < 3.0)
+                {
+                    if(min_d < 300)
+                    {
+                        if(rand()%6 == 0)
+                            p->actions[PLAYER_ACTION_SHOOT].state = true;
+                    }
+                }
+
+                if(rand()%3 == 0)
+                    fwd = true;
+
+                // if(isnan(p->angle_deg))
+                // {
+                //     printf("%s angle was nan!\n", p->settings.name);
+                //     p->angle_deg = 0.0;
+                // }
+
+            }
+
+            // if no targets then they're the winner
+
         }
 
-        if(!FEQ0(adif))
-        {
-            float sign = -ABS(adif)/adif;
-            p->angle_deg += p->turn_rate*sign;
-        }
-
-        if(isnan(p->angle_deg))
-        {
-            printf("%s angle was nan!\n", p->settings.name);
-            p->angle_deg = 0.0;
-        }
     }
 
 
@@ -260,11 +323,13 @@ void player_update(Player* p, double delta_t)
     if(left)
     {
         p->angle_deg += p->turn_rate*turn_factor_adj;
+        p->angle_deg = normalize_angle_deg(p->angle_deg);
     }
 
     if(right)
     {
         p->angle_deg -= p->turn_rate*turn_factor_adj;
+        p->angle_deg = normalize_angle_deg(p->angle_deg);
     }
 
     if(p->actions[PLAYER_ACTION_RESET].toggled_on)
@@ -396,6 +461,12 @@ void player_die(Player* p)
         text_list_add(text_lst, 3.0, "%s died", p->settings.name);
     }
 
+    player_determine_winner();
+
+}
+
+void player_determine_winner()
+{
     int num_dead = 0;
     for(int i = 0; i < MAX_PLAYERS; ++i)
     {
@@ -409,7 +480,6 @@ void player_die(Player* p)
         {
             winner_index = i;
         }
-
     }
 
     // GAME OVER
@@ -417,7 +487,6 @@ void player_die(Player* p)
     {
         screen = SCREEN_GAME_END;
     }
-
 }
 
 void player_hurt(Player* p, float damage)

@@ -555,6 +555,7 @@ void draw_settings(bool is_client)
         imgui_text_box("Name", menu_settings.name, PLAYER_NAME_MAX);
         imgui_color_picker("Color", &menu_settings.color);
         GFXImage* img = &gfx_images[player_image];
+        imgui_number_box("Sprite Index", 0, img->element_count-1, (int*)&menu_settings.sprite_index);
         imgui_newline();
         if(imgui_button("Return"))
         {
