@@ -197,9 +197,6 @@ static void print_packet_simple(Packet* pkt, const char* hdr)
 
 static bool has_data_waiting(int socket)
 {
-#if _WIN32
-    return false; //@TODO
-#else
     fd_set readfds;
 
     //clear the socket set  
@@ -221,7 +218,6 @@ static bool has_data_waiting(int socket)
 
     bool has_data = FD_ISSET(socket , &readfds);
     return has_data;
-#endif
 }
 
 static int net_send(NodeInfo* node_info, Address* to, Packet* pkt)

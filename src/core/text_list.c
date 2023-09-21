@@ -28,10 +28,26 @@ void text_list_add(text_list_t* lst, float duration, char* fmt, ...)
 
     char** d = &lst->text[lst->count];
 
+    va_list args, args2;
+    va_start(args, fmt);
+    va_copy(args2, args);
+
+    int size = vsnprintf(NULL, 0, fmt, args);
+
+    *d = calloc(size+1, sizeof(char));
+    if(!*d) return;
+
+    vsnprintf(*d, size+1, fmt, args2);
+
+    va_end(args);
+    va_end(args2);
+
+    /*
     va_list args;
     va_start(args, fmt);
     vasprintf(d, fmt, args);
     va_end(args);
+    */
 
     lst->durations[lst->count] = duration;
     lst->count++;
