@@ -145,6 +145,7 @@ void editor_draw()
                 }
                 num_players = _num_players;
 
+                // player_determine_winner();
 
             } break;
             case 1: // projectiles

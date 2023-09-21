@@ -22,6 +22,8 @@
 #define COLOR_BLACK     COLOR(0,0,0)
 #define COLOR_TINT_NONE (0xFFFFFFFF)
 #define COLOR_RAND      (rand() % 0xFFFFFFFF)
+#define COLOR_RAND_COMP (rand()%127)*(rand()%3)
+#define COLOR_RAND2     COLOR(COLOR_RAND_COMP, COLOR_RAND_COMP, COLOR_RAND_COMP)
 
 
 // types

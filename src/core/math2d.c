@@ -67,6 +67,21 @@ void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Mat
     dot_product_mat(*model, scale_trans,     model);
 
 }
+
+float normalize_angle_deg(float angle)
+{
+    if(angle >= 0 && angle <= 360.0) return angle;
+
+    while(angle < 0)
+    {
+        angle += 360.0;
+    }
+    int a = angle/360.0;
+    angle -= (360.0*a);
+    return angle;
+}
+
+
 float calc_angle_deg(float x0, float y0, float x1, float y1)
 {
     return DEG(calc_angle_rad(x0,y0,x1,y1));

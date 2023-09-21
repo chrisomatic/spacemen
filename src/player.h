@@ -90,6 +90,7 @@ void player_update(Player* p, double delta_t);
 void player_add_energy(Player* p, float e);
 void player_update_hit_box(Player* p);
 void player_draw(Player* p);
+void player_determine_winner();
 void player_hurt(Player* p, float damage);
 void player_die(Player* p);
 
