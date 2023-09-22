@@ -41,6 +41,11 @@ float game_end_counter;
 int winner_index = 0;
 int client_id = -1;
 
+// local game vars
+bool all_active = false;
+bool all_ai = false;
+
+
 // mouse
 int mx=0, my=0;
 
@@ -585,6 +590,7 @@ void run_game_start()
         player = &players[0];
         memcpy(&player->settings, &menu_settings, sizeof(Settings));
         player_init_local();
+        players_set_ai_state();
     }
 
     run_loop(SCREEN_GAME_START, update_game_start, draw_game_start);

@@ -89,6 +89,7 @@ extern Matrix IDENTITY_MATRIX;
 void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model);
 void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar);
 float normalize_angle_deg(float angle);
+float calc_angle_dif(float angle1, float angle2);
 float calc_angle_deg(float x0, float y0, float x1, float y1);
 float calc_angle_rad(float x0, float y0, float x1, float y1);
 float dist_squared(float x0, float y0, float x1, float y1);

@@ -55,6 +55,7 @@ void editor_init()
     particle_spawner = particles_spawn_effect(200, 120, &effect, 0, false, true);
 }
 
+
 void editor_draw()
 {
     imgui_begin_panel("Editor", 10, 10, true);
@@ -74,25 +75,22 @@ void editor_draw()
                     player_hurt(player,player->hp_max/2.0);
                 }
 
-                static bool all_active = false;
-                static bool all_ai = false;
-
-                bool _all_active = all_active;
-                bool _all_ai = all_ai;
-
+                static bool _all_active = false;
+                _all_active = all_active;
                 imgui_toggle_button(&all_active, "Toggle All Active");
                 imgui_toggle_button(&all_ai, "Toggle All AI");
 
-                for(int i = 0; i < MAX_PLAYERS; ++i)
+                if(all_active != _all_active)
                 {
-                    Player* p = &players[i];
-                    if(p == player) continue;
-
-                    if(all_active != _all_active)
+                    for(int i = 0; i < MAX_PLAYERS; ++i)
+                    {
+                        Player* p = &players[i];
+                        if(p == player) continue;
                         p->active = all_active;
-                    if(all_ai != _all_ai)
-                        p->ai = all_ai;
+                    }
                 }
+                players_set_ai_state();
+
 
                 char* nums[] = ASCII_NUMS;
                 player_selection = imgui_dropdown(nums, MAX_PLAYERS, "Select Player", &player_selection);
@@ -100,7 +98,23 @@ void editor_draw()
                 Player* p = &players[player_selection];
                 bool is_self = (p == player);
 
-                imgui_text("Position: %.1f, %.1f (%.2f)", p->pos.x, p->pos.y, p->angle_deg);
+                imgui_text("Position: %.1f, %.1f", p->pos.x, p->pos.y);
+
+                imgui_text("Angle: %.2f", p->angle_deg);
+
+
+                // float a1 = p->angle_deg;
+                // float a2 = a1 + 2.0;
+                // float dif = calc_angle_dif(a1, a2);
+                // float t = 1.0/3.0;
+                // float a = a1 + dif*RANGE(t,0.0,1.0);
+                // a = normalize_angle_deg(a);
+                // imgui_text("LERP Angle: %.2f -> %.2f (%.2f)   %.2f ", a1, a2, dif, a);
+
+                // float dif = calc_angle_dif(p->angle_deg, 10.0);
+                // // float a = normalize_angle_deg(a);
+                // imgui_text("Angle Dif: %.2f", dif);
+
 
                 if(imgui_button("Reset Position"))
                 {

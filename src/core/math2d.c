@@ -81,12 +81,29 @@ float normalize_angle_deg(float angle)
     return angle;
 }
 
+float calc_angle_dif(float angle1, float angle2)
+{
+    float dif = angle2 - angle1;
+    float adif = ABS(dif);
+
+    if(adif > 180.0)
+    {
+        if(dif < 0.0)
+        {
+            return (360.0+dif);
+        }
+        else
+        {
+            return -(angle1 + (360.0-angle2));
+        }
+    }
+    return dif;
+}
 
 float calc_angle_deg(float x0, float y0, float x1, float y1)
 {
     return DEG(calc_angle_rad(x0,y0,x1,y1));
 }
-
 
 float calc_angle_rad(float x0, float y0, float x1, float y1)
 {

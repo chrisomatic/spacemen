@@ -79,17 +79,16 @@ void players_init()
 
         if(p == player)
         {
-            p->pos.x = view_width/2.0 + rand()%100;
-            p->pos.y = 100.0 + rand()%200;
+            p->pos.x = view_width/2.0;
+            p->pos.y = view_height/2.0;
         }
         else
         {   p->settings.color = COLOR_RAND2;
+            p->pos.x = rand()%view_width;
+            p->pos.y = rand()%view_height;
             // p->pos.x = player->pos.x - 100;
             // p->pos.y = player->pos.y - 100;
             // p->ai = true;
-
-            p->pos.x = rand()%view_width;
-            p->pos.y = rand()%view_height;
         }
 
         p->vel.x = 0.0;
@@ -185,8 +184,6 @@ void player_update(Player* p, double delta_t)
         if(count > 0)
         {
 
-
-
             Player* target_player = NULL;
             float min_d = view_width*view_height;
 
@@ -208,41 +205,18 @@ void player_update(Player* p, double delta_t)
             {
                 float target_angle = calc_angle_deg(p->pos.x, p->pos.y, target_player->pos.x, target_player->pos.y);
 
-                float dif = target_angle - p->angle_deg;
+                float dif = calc_angle_dif(p->angle_deg, target_angle);
                 float adif = ABS(dif);
+
                 if(adif > 0.5 && rand()%11<=9)
                 {
 
-                    float adj = 1.0;
-                    if(dif < 0) adj = -1.0;
-
-                    if(target_angle <= 360.0 && target_angle >= 270.0)
-                    {
-                        if(dif < 0 || adif > 180)
-                        {
-                            adj = -1.0;
-                        }
-                        else
-                        {
-                            adj = 1.0;
-                        }
-                    }
-                    if(target_angle <= 90.0 && target_angle >= 0.0)
-                    {
-                        if(dif < 0 && adif < 180)
-                        {
-                            adj = -1.0;
-                        }
-                        else
-                        {
-                            adj = 1.0;
-                        }
-                    }
+                    float adj = 1.0 * dif/adif;
 
                     adj *= p->turn_rate;
                     if(adif < ABS(adj))
                     {
-                        adj /= 4.0;
+                        adj /= 10.0;
                     }
 
                     // text_list_add(text_lst, 2.0, "%.2f, %.2f, %+.0f  (%.2f)",p->angle_deg, target_angle, adj, dif);
@@ -252,6 +226,7 @@ void player_update(Player* p, double delta_t)
                     p->actions[PLAYER_ACTION_SHOOT].state = false;
                 }
 
+#if 1
                 if(adif < 3.0)
                 {
                     if(min_d < 300)
@@ -263,7 +238,7 @@ void player_update(Player* p, double delta_t)
 
                 if(rand()%3 == 0)
                     fwd = true;
-
+#endif
                 // if(isnan(p->angle_deg))
                 // {
                 //     printf("%s angle was nan!\n", p->settings.name);
@@ -590,6 +565,28 @@ void player_draw(Player* p)
     }
 }
 
+static void player_reset(Player* p)
+{
+    p->pos.x = VIEW_WIDTH/2.0;
+    p->pos.y = VIEW_HEIGHT/2.0;
+    p->vel.x = 0.0;
+    p->vel.y = 0.0;
+    p->energy = MAX_ENERGY;
+    p->hp = p->hp_max;
+}
+
+void players_set_ai_state()
+{
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        Player* p = &players[i];
+        if(p == player) continue;
+
+        if(all_ai != p->ai)
+            p->ai = all_ai;
+    }
+}
+
 void player_handle_net_inputs(Player* p, double delta_t)
 {
     // handle input
@@ -626,18 +623,13 @@ void player_lerp(Player* p, double delta_t)
     p->pos.x = lp.x;
     p->pos.y = lp.y;
 
-    p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
+    // p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
+    float dif = calc_angle_dif(p->server_state_prior.angle, p->server_state_target.angle);
+    float a = p->server_state_prior.angle + dif*RANGE(t,0.0,1.0);
+    p->angle_deg = normalize_angle_deg(a);
+    // printf("%.2f -> %.2f (%.2f)  %.2f\n", p->server_state_prior.angle, p->server_state_target.angle, dif, p->angle_deg);
+
     p->energy = lerp(p->server_state_prior.energy, p->server_state_target.energy,t);
     p->hp = lerp(p->server_state_prior.hp, p->server_state_target.hp, t);
 
-}
-
-static void player_reset(Player* p)
-{
-    p->pos.x = VIEW_WIDTH/2.0;
-    p->pos.y = VIEW_HEIGHT/2.0;
-    p->vel.x = 0.0;
-    p->vel.y = 0.0;
-    p->energy = MAX_ENERGY;
-    p->hp = p->hp_max;
 }

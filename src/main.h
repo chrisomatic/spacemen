@@ -72,5 +72,8 @@ extern GameRole role;
 extern Rect world_box;
 extern Settings menu_settings;
 
+extern bool all_active;
+extern bool all_ai;
+
 bool is_in_world(Rect* r);
 Vector2f limit_rect_pos(Rect* limit, Rect* rect);
