@@ -772,6 +772,7 @@ int net_server_start()
 
         // don't wait, just proceed to handling packets
         //timer_wait_for_frame(&server_timer);
+        timer_delay_us(1000);
     }
 }
 
