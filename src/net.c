@@ -1211,7 +1211,8 @@ void net_client_update()
                     if(index < srvpkt.data_len-1)
                     {
                         // load projectiles
-                        uint8_t num_projectiles = unpack_u8(&srvpkt, &index);
+                        uint8_t num_projectiles = srvpkt.data[index];
+                        index += 1;
 
                         list_clear(plist);
                         plist->count = num_projectiles;
@@ -1220,12 +1221,28 @@ void net_client_update()
                         {
                             Projectile* p = &projectiles[i];
 
-                            uint16_t id       = unpack_u16(&srvpkt, &index);
-                            Vector2f pos      = unpack_vec2(&srvpkt, &index);
-                            float angle       = unpack_float(&srvpkt, &index);
-                            uint8_t player_id = unpack_u8(&srvpkt, &index);
+                            uint16_t id;
+                            Vector2f pos;
+                            float angle;
+                            uint8_t player_id;
+
+
+                            memcpy(&id, &srvpkt.data[index],sizeof(uint16_t));
+                            index += sizeof(uint16_t);
+
+                            memcpy(&pos, &srvpkt.data[index], sizeof(Vector2f));
+                            index += sizeof(Vector2f);
+
+                            memcpy(&angle, &srvpkt.data[index],sizeof(float));
+                            index += sizeof(float);
+
+                            memcpy(&player_id, &srvpkt.data[index],sizeof(uint8_t));
+                            index += sizeof(uint8_t);
 
                             p->lerp_t = 0.0;
+
+                            //LOGN("      Pos: %f, %f. Angle: %f", pos.x, pos.y, angle);
+
 
                             p->server_state_prior.id = p->id;
                             p->server_state_prior.pos.x = p->pos.x;
