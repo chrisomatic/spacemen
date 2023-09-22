@@ -570,7 +570,7 @@ int imgui_button_select(int num_buttons, char* button_labels[], char* label)
     uint32_t hash = hash_str(_str,strlen(_str),0x0);
     IntLookup* lookup = get_int_lookup(hash);
     if (!lookup)
-        return;
+        return 0;
 
     int* val = &lookup->val;
 
@@ -814,9 +814,11 @@ Vector2f imgui_number_box_formatted(char* label, int min, int max, char* format,
     char new_label[32] = {0};
     mask_off_hidden(label, new_label, 32);
 
+    Vector2f ret = {ctx->curr.w, ctx->curr.h};
+
     IntLookup* lookup = get_int_lookup(hash);
     if (!lookup)
-        return;
+        return ret;
 
     int* val = &lookup->val;
 
@@ -866,7 +868,6 @@ Vector2f imgui_number_box_formatted(char* label, int min, int max, char* format,
 
     *result = *val;
 
-    Vector2f ret = {ctx->curr.w, ctx->curr.h};
     return ret;
 }
 
