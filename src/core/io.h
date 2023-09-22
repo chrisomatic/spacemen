@@ -18,6 +18,21 @@ static BOOL io_file_exists(char* file_path)
     return (access(file_path, F_OK) == 0);
 }
 
+static char* io_get_filename(char* full_path)
+{
+    char* pfile;
+    pfile = full_path + strlen(full_path);
+    for (; pfile > full_path; pfile--)
+    {
+        if ((*pfile == '\\') || (*pfile == '/'))
+        {
+            pfile++;
+            break;
+        }
+    }
+    return pfile;
+}
+
 static int io_get_files_in_dir(char* dir_path, char* match_str, char files[32][32])
 {
 #ifdef _WIN32

@@ -43,13 +43,14 @@ void effects_load_all()
 
     for(int i = 0; i < num_effects; ++i)
     {
-        char full_path[64] = {0};
-        snprintf(full_path,63,"src/effects/%s",files[i]);
-        printf("files[i]: %s\n",files[i]);
-        int index = get_effect_map_index(files[i]);
+        char* filename = io_get_filename(files[i]);
+        char full_path[100] = {0};
+        snprintf(full_path,99,"src/effects/%s",filename);
+        printf("files[%d]: %s\n",i, filename);
+        int index = get_effect_map_index(filename);
         if(index == -1)
         {
-            LOGW("Failed to map effect %s", files[i]);
+            LOGW("Failed to map effect %s",filename);
         }
         else if(index >= MAX_PARTICLE_EFFECTS)
         {
@@ -58,7 +59,7 @@ void effects_load_all()
         else
         {
             effects_load(full_path,&particle_effects[index]);
-            LOGI("%d: %s",i, files[i]);
+            LOGI("%d: %s",i,filename);
         }
     }
 }
