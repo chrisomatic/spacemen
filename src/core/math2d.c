@@ -12,6 +12,15 @@ Matrix IDENTITY_MATRIX = {
     }
 };
 
+float lerp_angle_deg(float a, float b, float t)
+{
+    t = RANGE(t,0.0,1.0);
+    float dif = calc_angle_dif(a, b);
+    float l = a + dif*t;
+    // return l;
+    return normalize_angle_deg(l);
+}
+
 float lerp(float a, float b, float t)
 {
     t = RANGE(t,0.0,1.0);

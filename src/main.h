@@ -66,6 +66,7 @@ extern int num_lives;
 extern int num_players;
 extern float game_end_counter;
 extern int winner_index;
+extern int client_id;
 
 extern Timer game_timer;
 extern GameRole role;

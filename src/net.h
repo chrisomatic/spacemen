@@ -140,3 +140,5 @@ void net_client_send_settings();
 int net_client_send(uint8_t* data, uint32_t len);
 int net_client_recv(Packet* pkt);
 void net_client_deinit();
+
+void test_packing();

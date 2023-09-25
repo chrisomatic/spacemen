@@ -128,6 +128,7 @@ bool rects_equal(Rect* r1, Rect* r2);
 void print_rect(Rect* r);
 void print_rectxy(RectXY* r);
 
+float lerp_angle_deg(float a, float b, float t);
 float lerp(float a, float b, float t);
 Vector2f lerp2f(Vector2f* a, Vector2f* b, float t);
 Vector3f lerp3f(Vector3f* a, Vector3f* b, float t);

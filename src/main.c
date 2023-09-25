@@ -128,6 +128,9 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 int main(int argc, char* argv[])
 {
 
+    // test_packing();
+    // exit(0);
+
     init_timer();
     log_init(0);
 

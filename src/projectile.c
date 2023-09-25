@@ -212,25 +212,24 @@ void projectile_lerp(Projectile* p, double delta_t)
     float tick_time = 1.0/TICK_RATE;
     float t = (p->lerp_t / tick_time);
 
-
     if((p->server_state_prior.pos.x == 0.0 && p->server_state_prior.pos.y == 0.0) || p->server_state_prior.id != p->server_state_target.id)
     {
         // new projectile, set position and id directly
         p->server_state_prior.id = p->server_state_target.id;
         p->id = p->server_state_target.id;
+        p->server_state_prior.angle = p->server_state_target.angle;
         memcpy(&p->server_state_prior.pos, &p->server_state_target.pos, sizeof(Vector2f));
+        //TODO:
+        p->hit_box.w = 10;
+        p->hit_box.h = 10;
     }
 
     Vector2f lp = lerp2f(&p->server_state_prior.pos,&p->server_state_target.pos,t);
     p->pos.x = lp.x;
     p->pos.y = lp.y;
 
+    p->angle_deg = lerp_angle_deg(p->server_state_prior.angle, p->server_state_target.angle, t);
     //printf("prior_pos: %f %f, target_pos: %f %f, pos: %f %f, t: %f\n",p->server_state_prior.pos.x, p->server_state_prior.pos.y, p->server_state_target.pos.x, p->server_state_target.pos.y, p->pos.x, p->pos.y, t);
-    //TODO
-    p->hit_box.w = 10;
-    p->hit_box.h = 10;
-
-    p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
 }
 
 void projectile_handle_collisions(float delta_t)

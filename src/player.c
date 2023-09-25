@@ -107,6 +107,7 @@ void players_init()
         p->hit_box.w = wh;
         p->hit_box.h = wh;
 
+        memset(p->settings.name, PLAYER_NAME_MAX, 0);
         sprintf(p->settings.name, "Player %d", i);
 
         memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
@@ -623,11 +624,7 @@ void player_lerp(Player* p, double delta_t)
     p->pos.x = lp.x;
     p->pos.y = lp.y;
 
-    // p->angle_deg = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
-    float dif = calc_angle_dif(p->server_state_prior.angle, p->server_state_target.angle);
-    float a = p->server_state_prior.angle + dif*RANGE(t,0.0,1.0);
-    p->angle_deg = normalize_angle_deg(a);
-    // printf("%.2f -> %.2f (%.2f)  %.2f\n", p->server_state_prior.angle, p->server_state_target.angle, dif, p->angle_deg);
+    p->angle_deg = lerp_angle_deg(p->server_state_prior.angle, p->server_state_target.angle, t);
 
     p->energy = lerp(p->server_state_prior.energy, p->server_state_target.energy,t);
     p->hp = lerp(p->server_state_prior.hp, p->server_state_target.hp, t);
