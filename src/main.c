@@ -746,6 +746,10 @@ void draw_game_start(bool is_client)
         }
         else
         {
+
+            gfx_draw_rect(&ready_zone, COLOR_GREEN, 0.0, 1.0, 1.0, false, true);
+            gfx_draw_string(ready_zone.x-ready_zone.w/2.0-10, ready_zone.y-ready_zone.h/2.0-10, COLOR_GREEN, 0.3, 0.0, 1.0, true, true, "READY");
+
             // projectiles
             // -----------------------------------------------------------------------
             for(int i = 0; i < plist->count; ++i)

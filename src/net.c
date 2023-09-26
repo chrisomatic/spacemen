@@ -540,6 +540,54 @@ static void server_update_players()
     }
 }
 
+static void server_update_game_status()
+{
+    switch(game_status)
+    {
+        case GAME_STATUS_LIMBO:
+        {
+            if(server.num_clients < 2)
+                break;
+
+            bool all_players_in_zone = true;
+
+            // check if all players are in ready_zone
+            for(int i = 0; i < MAX_CLIENTS; ++i)
+            {
+                ClientInfo* cli = &server.clients[i];
+                if(cli->state != CONNECTED)
+                    continue;
+
+                Player* p = &players[cli->client_id];
+
+                if(!rectangles_colliding(&p->hit_box, &ready_zone))
+                {
+                    all_players_in_zone = false;
+                    break;
+                }
+            }
+
+            if(all_players_in_zone)
+            {
+                // start game!
+                game_status = GAME_STATUS_RUNNING;
+            }
+
+        }   break;
+        case GAME_STATUS_RUNNING:
+        {
+            // check to see if there is a winner
+
+        }   break;
+
+        case GAME_STATUS_COMPLETE:
+        {
+
+        }   break;
+    }
+
+}
+
 int net_server_start()
 {
     // init
@@ -751,6 +799,8 @@ int net_server_start()
             server_update_players();
             accum_g -= 1.0/TARGET_FPS;
         }
+
+        server_update_game_status();
 
         t1 = timer_get_time();
         double elapsed_time = t1 - t0;
