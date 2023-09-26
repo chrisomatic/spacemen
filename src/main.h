@@ -73,6 +73,7 @@ extern GameRole role;
 extern Rect world_box;
 extern Settings menu_settings;
 
+extern bool can_target_player;
 extern bool all_active;
 extern bool all_ai;
 

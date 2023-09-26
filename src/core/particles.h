@@ -60,6 +60,7 @@ typedef struct
 {
     int id;
     Vector2f pos;
+    int z;
     ParticleEffect effect;
     float life;
     float life_max;
@@ -79,10 +80,12 @@ extern ParticleSpawner spawners[MAX_PARTICLE_SPAWNERS];
 extern glist* spawner_list;
 
 void particles_init();
-ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect, float lifetime, bool in_world, bool hidden);
+ParticleSpawner* particles_spawn_effect(float x, float y, int z, ParticleEffect* effect, float lifetime, bool in_world, bool hidden);
+void particles_respawn_effect(ParticleSpawner* spawner, float x, float y, float lifetime, bool in_world, bool hidden);
 void particles_update(double delta_t);
 void particles_show_spawner(int id, bool show);
 void particles_draw();
+void particles_draw_layer(int z);
 void particles_draw_spawner(ParticleSpawner* spawner, bool ignore_light, bool add_to_existing_batch);
 ParticleSpawner* particles_get_spawner(int id);
 //bool particles_is_spawner_in_camera_view(ParticleSpawner* s);

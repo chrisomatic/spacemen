@@ -41,7 +41,12 @@ float game_end_counter;
 int winner_index = 0;
 int client_id = -1;
 
+ParticleEffect mouse_click_effect = {0};
+// ParticleSpawner* mouse_click_spawner = NULL;
+
+
 // local game vars
+bool can_target_player = false;
 bool all_active = false;
 bool all_ai = false;
 
@@ -277,6 +282,8 @@ void init()
 
     stars_init();
 
+    memcpy(&mouse_click_effect, &particle_effects[EFFECT_PLAYER_ACTIVATE],sizeof(ParticleEffect));
+    // mouse_click_spawner = particles_spawn_effect(0,0, &mouse_click_effect,1.0,true,true);
 }
 
 
@@ -612,6 +619,7 @@ void update_game_start(float _dt, bool is_client)
 
     if(!is_client && initiate_game)
     {
+        players_set_ai_state();
         screen = SCREEN_GAME;
         return;
     }
@@ -721,6 +729,7 @@ void draw_game_start(bool is_client)
         imgui_begin_panel("Settings", x,y, false);
             imgui_number_box("Lives", 1, 10, &num_lives);
             imgui_number_box("Players", 2, MAX_PLAYERS, &num_players);
+            imgui_toggle_button(&all_ai, "Toggle All AI");
             bool start = imgui_button("Start");
         imgui_end();
 
@@ -806,6 +815,7 @@ void draw_game_end(bool is_client)
     text_list_draw(text_lst);
 }
 
+
 void simulate(double dt)
 {
     if(!paused)
@@ -826,8 +836,8 @@ void simulate(double dt)
                 Rect r = {0};
                 r.x = mx;
                 r.y = my;
-                r.w = 10;
-                r.h = 10;
+                r.w = 20;
+                r.h = 20;
                 for(int i = 0; i < MAX_PLAYERS; ++i)
                 {
                     Player* p = &players[i];
@@ -842,10 +852,40 @@ void simulate(double dt)
                         {
                             player2 = p;
                             player_set_controls();
+
+                            ParticleEffect e = mouse_click_effect;
+                            // e.scale.init_min = 
+                            e.color1 = COLOR(0,0xff,0);
+                            e.color2 = e.color1;
+                            e.color3 = e.color1;
+                            particles_spawn_effect(mx,my,1, &e,1.0,true,false);
+                            text_list_add(text_lst, 5.0, "Controlling %s", p->settings.name);
+
                         }
+
                         if(rightc)
                         {
                             p->ai = !p->ai;
+                            if(p->ai)
+                            {
+                                ParticleEffect e = mouse_click_effect;
+                                e.color1 = COLOR(0xff,0,0);
+                                e.color2 = e.color1;
+                                e.color3 = e.color1;
+                                particles_spawn_effect(mx,my,1, &e,1.0,true,false);
+                                text_list_add(text_lst, 5.0, "AI enabled for %s", p->settings.name);
+                            }
+                            else
+                            {
+                                p->actions[PLAYER_ACTION_SHOOT].state = false;
+
+                                ParticleEffect e = mouse_click_effect;
+                                e.color1 = COLOR(0,0,0xff);
+                                e.color2 = e.color1;
+                                e.color3 = e.color1;
+                                particles_spawn_effect(mx,my,1, &e,1.0,true,false);
+                                text_list_add(text_lst, 5.0, "AI disabled for %s", p->settings.name);
+                            }
                         }
                     }
                 }
@@ -961,12 +1001,16 @@ void draw_game(bool is_client)
 
     stars_draw();
 
+
     // projectiles
     // -----------------------------------------------------------------------
     for(int i = 0; i < plist->count; ++i)
     {
         projectile_draw(&projectiles[i]);
     }
+
+    particles_draw_layer(0);
+
 
     // players
     // -----------------------------------------------------------------------
@@ -975,6 +1019,9 @@ void draw_game(bool is_client)
         Player* p = &players[i];
         player_draw(p);
     }
+
+    particles_draw_layer(1);
+
 
     gfx_draw_lines();
 

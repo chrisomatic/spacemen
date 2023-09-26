@@ -17,7 +17,7 @@ int player_count = 1;
 
 static void player_reset(Player* p);
 
-ParticleSpawner* jet_spawner;
+ParticleSpawner* jet_spawner = NULL;
 
 void player_init_local()
 {
@@ -27,7 +27,8 @@ void player_init_local()
 
     ParticleEffect jets = {0};
     memcpy(&jets, &particle_effects[EFFECT_JETS],sizeof(ParticleEffect));
-    jet_spawner = particles_spawn_effect(player->pos.x,player->pos.y, &jets,0.0,true,false);
+    if(jet_spawner == NULL)
+        jet_spawner = particles_spawn_effect(player->pos.x,player->pos.y, 0, &jets,0.0,true,false);
 
 }
 
@@ -193,6 +194,7 @@ void player_update(Player* p, double delta_t)
                 if(!players[i].active) continue;
                 if(players[i].dead) continue;
                 if(players[i].id == p->id) continue;
+                if(!can_target_player && &players[i] == player) continue;
 
                 float d = dist(p->pos.x, p->pos.y, players[i].pos.x, players[i].pos.y);
                 if(d < min_d)
@@ -489,10 +491,10 @@ void player_draw(Player* p)
         p->settings.sprite_index = 0;
     }
 
-    if(p == player)
-    {
-        particles_draw_spawner(jet_spawner,true, false);
-    }
+    // if(p == player)
+    // {
+    //     particles_draw_spawner(jet_spawner,true, false);
+    // }
 
     gfx_draw_image_color_mask(player_image, p->settings.sprite_index, p->pos.x, p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
 

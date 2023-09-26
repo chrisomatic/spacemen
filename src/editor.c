@@ -52,7 +52,7 @@ void editor_init()
 
     randomize_effect(&effect);
 
-    particle_spawner = particles_spawn_effect(200, 120, &effect, 0, false, true);
+    particle_spawner = particles_spawn_effect(200, 120, 1, &effect, 0, false, true);
 }
 
 
@@ -75,6 +75,7 @@ void editor_draw()
                     player_hurt(player,player->hp_max/2.0);
                 }
 
+                imgui_toggle_button(&can_target_player, "Can Target Player");
                 static bool _all_active = false;
                 _all_active = all_active;
                 imgui_toggle_button(&all_active, "Toggle All Active");

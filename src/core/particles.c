@@ -135,7 +135,7 @@ void particles_init()
     particles_image = gfx_load_image("src/img/particles.png", false, true, 32, 32);
 }
 
-ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect, float lifetime, bool in_world, bool hidden)
+ParticleSpawner* particles_spawn_effect(float x, float y, int z, ParticleEffect* effect, float lifetime, bool in_world, bool hidden)
 {
     if(list_is_full(spawner_list))
     {
@@ -158,6 +158,7 @@ ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect
     spawner->id = get_id();
     spawner->pos.x = x;
     spawner->pos.y = y;
+    spawner->z = z;
     spawner->in_world = in_world;
     spawner->spawn_time_max = RAND_FLOAT(spawner->effect.spawn_time_min, spawner->effect.spawn_time_max);
     spawner->spawn_time = spawner->spawn_time_max;
@@ -169,6 +170,22 @@ ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect
 
     return (spawner);
 }
+
+void particles_respawn_effect(ParticleSpawner* spawner, float x, float y, float lifetime, bool in_world, bool hidden)
+{
+    spawner->effect.version = PARTICLES_EFFECT_VERSION;
+    spawner->pos.x = x;
+    spawner->pos.y = y;
+    spawner->in_world = in_world;
+    spawner->spawn_time_max = RAND_FLOAT(spawner->effect.spawn_time_min, spawner->effect.spawn_time_max);
+    spawner->spawn_time = spawner->spawn_time_max;
+    spawner->hidden = hidden;
+    spawner->mortal = (lifetime > 0.0);
+    spawner->life = 0.0;
+    spawner->life_max = lifetime;
+    spawner->dead = false;
+}
+
 
 void particles_update(double delta_t)
 {
@@ -315,6 +332,21 @@ void particles_draw()
             continue;
 
         particles_draw_spawner(spawner, false, false);
+    }
+}
 
+void particles_draw_layer(int z)
+{
+    for(int i = 0; i < spawner_list->count; ++i)
+    {
+        ParticleSpawner* spawner = &spawners[i];
+
+        if(spawner->hidden)
+            continue;
+
+        if(spawner->z != z)
+            continue;
+
+        particles_draw_spawner(spawner, false, false);
     }
 }

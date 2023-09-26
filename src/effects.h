@@ -21,6 +21,7 @@ typedef enum
     EFFECT_LEVEL_UP,
     EFFECT_JETS,
     EFFECT_EXPLOSION,
+    EFFECT_PLAYER_ACTIVATE,
     EFFECT_MAX,
 } Effect;
 
