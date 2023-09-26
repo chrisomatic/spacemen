@@ -539,33 +539,37 @@ void player_draw(Player* p)
         // }
     }
 
-    if(p == player)
+    if(game_status == GAME_STATUS_RUNNING)
     {
-        // draw hp
-        float hp_full_w  = view_width/2.0;
-        float hp_w = hp_full_w*(p->hp/p->hp_max);
-        float hp_h = 15.0;
-        float hp_x = (view_width - hp_full_w)/2.0;
-        float hp_y = view_height - hp_h - 20.0;
-        gfx_draw_rect_xywh_tl(hp_x-1, hp_y-1, hp_full_w+2, hp_h+2, COLOR_BLACK, 0.0,1.0,0.7, true, true);
-        gfx_draw_rect_xywh_tl(hp_x, hp_y, hp_w, hp_h, 0x00CC0000, 0.0,1.0,0.4, true, false);
+        if(p == player)
+        {
 
-        // draw energy
-        float energy_width = hp_full_w*(p->energy/MAX_ENERGY);
-        float pad = 3.0;
-        float energy_h = 4.0;
-        float energy_y = hp_y + hp_h + pad;
-        gfx_draw_rect_xywh_tl(hp_x-1, energy_y-1, hp_full_w+2, energy_h+2, COLOR_BLACK, 0.0,1.0,0.7, true, false);
-        gfx_draw_rect_xywh_tl(hp_x, energy_y, energy_width, energy_h, COLOR_YELLOW, 0.0,1.0,0.4, true, false);
-    }
-    else
-    {
-        float w = img->element_width;
-        float h = img->element_height;
-        float hp_w = w * (p->hp/p->hp_max);
-        float hp_x = p->pos.x - w/2.0;
-        float hp_y = p->pos.y + h/2.0 + 2.0;
-        gfx_draw_rect_xywh_tl(hp_x, hp_y, hp_w, 2, 0x00CC0000, 0.0,1.0,0.4, true, true);
+            // draw hp
+            float hp_full_w  = view_width/2.0;
+            float hp_w = hp_full_w*(p->hp/p->hp_max);
+            float hp_h = 15.0;
+            float hp_x = (view_width - hp_full_w)/2.0;
+            float hp_y = view_height - hp_h - 20.0;
+            gfx_draw_rect_xywh_tl(hp_x-1, hp_y-1, hp_full_w+2, hp_h+2, COLOR_BLACK, 0.0,1.0,0.7, true, true);
+            gfx_draw_rect_xywh_tl(hp_x, hp_y, hp_w, hp_h, 0x00CC0000, 0.0,1.0,0.4, true, false);
+
+            // draw energy
+            float energy_width = hp_full_w*(p->energy/MAX_ENERGY);
+            float pad = 3.0;
+            float energy_h = 4.0;
+            float energy_y = hp_y + hp_h + pad;
+            gfx_draw_rect_xywh_tl(hp_x-1, energy_y-1, hp_full_w+2, energy_h+2, COLOR_BLACK, 0.0,1.0,0.7, true, false);
+            gfx_draw_rect_xywh_tl(hp_x, energy_y, energy_width, energy_h, COLOR_YELLOW, 0.0,1.0,0.4, true, false);
+        }
+        else
+        {
+            float w = img->element_width;
+            float h = img->element_height;
+            float hp_w = w * (p->hp/p->hp_max);
+            float hp_x = p->pos.x - w/2.0;
+            float hp_y = p->pos.y + h/2.0 + 2.0;
+            gfx_draw_rect_xywh_tl(hp_x, hp_y, hp_w, 2, 0x00CC0000, 0.0,1.0,0.4, true, true);
+        }
     }
 }
 

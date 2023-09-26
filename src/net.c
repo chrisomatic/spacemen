@@ -1191,10 +1191,7 @@ void net_client_update()
                 {
 
                     uint8_t gs = unpack_u8(&srvpkt, &offset);
-                    if(gs >= 0 && gs < GAME_STATUS_MAX)
-                    {
-                        game_status = gs;
-                    }
+
                     uint8_t num_players = unpack_u8(&srvpkt, &offset);
                     client.player_count = num_players;
 
@@ -1276,6 +1273,30 @@ void net_client_update()
 
                     client.player_count = num_players;
                     player_count = num_players;
+
+                    if(gs >= 0 && gs < GAME_STATUS_MAX)
+                    {
+                        // GameStatus gs_prior = game_status;
+                        if(gs != game_status)
+                        {
+                            game_status = gs;
+                            switch(game_status)
+                            {
+                                case GAME_STATUS_LIMBO:
+                                    screen = SCREEN_GAME_START;
+                                    break;
+                                case GAME_STATUS_RUNNING:
+                                    screen = SCREEN_GAME;
+                                    break;
+                                case GAME_STATUS_COMPLETE:
+                                    screen = SCREEN_GAME_END;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+
+                    }
 
                 } break;
  

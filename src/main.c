@@ -125,6 +125,7 @@ void run_server();
 void stars_init();
 void stars_update();
 void stars_draw();
+void player_list_draw();
 
 void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
@@ -186,7 +187,10 @@ int main(int argc, char* argv[])
         }
 
         if(window_should_close())
+        {
+            net_client_disconnect();
             break;
+        }
     }
 
     return 0;
@@ -349,7 +353,10 @@ void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _d
             break;
 
         if(back_to_home)
+        {
+            net_client_disconnect();
             break;
+        }
 
         if(screen != _screen)
             break;
@@ -620,12 +627,12 @@ void update_game_start(float _dt, bool is_client)
 {
     static float retry_time = 0.0;
 
-
     stars_update();
     text_list_update(text_lst, _dt);
 
     if(!is_client && initiate_game)
     {
+        // game_status = GAME_STATUS_RUNNING;
         players_set_ai_state();
         screen = SCREEN_GAME;
         return;
@@ -667,6 +674,11 @@ void update_game_start(float _dt, bool is_client)
                     {
                         client_id = rcv;
                         text_list_add(text_lst, 5.0, "Connected, client id: %d.", rcv);
+
+                        player = &players[client_id];
+                        memcpy(&player->settings, &menu_settings, sizeof(Settings));
+                        player_init_local();
+                        net_client_send_settings();
                     }
                     else
                     {
@@ -683,20 +695,30 @@ void update_game_start(float _dt, bool is_client)
             }
 
         }
-
-        if(client_id != -1)
+        else
         {
-            LOGN("Client ID: %d", client_id);
-            player = &players[client_id];
-
-            memcpy(&player->settings, &menu_settings, sizeof(Settings));
-            player_init_local();
-
-            net_client_send_settings();
-
-            screen = SCREEN_GAME;
-            return;
+            net_client_update();
+            simulate_client(_dt); // client-side prediction
+            if(!net_client_is_connected())
+            {
+                text_list_add(text_lst, 2.0, "Got disconnected from server.");
+                screen = SCREEN_HOME;
+            }
         }
+
+        // if(client_id != -1)
+        // {
+        //     LOGN("Client ID: %d", client_id);
+        //     player = &players[client_id];
+
+        //     memcpy(&player->settings, &menu_settings, sizeof(Settings));
+        //     player_init_local();
+
+        //     net_client_send_settings();
+
+        //     // screen = SCREEN_GAME;
+        //     return;
+        // }
 
     }
 
@@ -714,18 +736,39 @@ void draw_game_start(bool is_client)
 
     if(is_client)
     {
-        char* text = "?";
-        // if(net_client_get_state() == DISCONNECTED)
-        // {
-        //     text = "sending connect...";
-        // }
-        // else
+
+        if(client_id == -1)
         {
-            text = "Waiting for connection...";
+            char* text = "Waiting for connection...";
+            float title_scale = 1.0;
+            Vector2f title_size = gfx_string_get_size(title_scale, text);
+            gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR_BLUE, title_scale, 0.0, 1.0, true, true, text);
         }
-        float title_scale = 1.0;
-        Vector2f title_size = gfx_string_get_size(title_scale, text);
-        gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, COLOR_BLUE, title_scale, 0.0, 1.0, true, true, text);
+        else
+        {
+            // projectiles
+            // -----------------------------------------------------------------------
+            for(int i = 0; i < plist->count; ++i)
+            {
+                projectile_draw(&projectiles[i]);
+            }
+
+            particles_draw_layer(0);
+
+            // players
+            // -----------------------------------------------------------------------
+            for(int i = 0; i < MAX_PLAYERS; ++i)
+            {
+                Player* p = &players[i];
+                player_draw(p);
+            }
+
+            particles_draw_layer(1);
+
+            gfx_draw_lines();
+
+            player_list_draw();
+        }
 
     }
     else
@@ -829,8 +872,8 @@ void simulate(double dt)
     {
         projectile_update(dt);
         particles_update(dt);
-        stars_update();
-        text_list_update(text_lst, dt);
+        // stars_update();
+        // text_list_update(text_lst, dt);
 
         window_get_mouse_view_coords(&mx, &my);
 
@@ -911,8 +954,6 @@ void simulate(double dt)
 
 void simulate_client(double dt)
 {
-    stars_update();
-    text_list_update(text_lst, dt);
 
     //projectile_update(dt);
     //player_update(player,dt); // client-side prediction
@@ -959,6 +1000,12 @@ void run_game()
 
 void update_game(float _dt, bool is_client)
 {
+    if(!paused)
+    {
+        stars_update();
+        text_list_update(text_lst, _dt);
+    }
+
     if(is_client)
     {
         net_client_update();
@@ -966,6 +1013,7 @@ void update_game(float _dt, bool is_client)
 
         if(!net_client_is_connected())
         {
+            text_list_add(text_lst, 2.0, "Got disconnected from server.");
             screen = SCREEN_HOME;
         }
     }
@@ -1034,41 +1082,7 @@ void draw_game(bool is_client)
 
     if(true)
     {
-        Player* player_list[MAX_PLAYERS] = {0};
-        for(int i = 0; i < MAX_PLAYERS; ++i)
-            player_list[i] = &players[i];
-
-        // printf("players    : ");
-        // for(int i = 0; i < MAX_PLAYERS; ++i)
-        //     printf("%p,  ", &players[i]);
-        // printf("\n");
-
-        // printf("before sort: ");
-        // for(int i = 0; i < MAX_PLAYERS; ++i)
-        //     printf("%p,  ", player_list[i]);
-        // printf("\n");
-
-        sort_players(player_list);
-
-        // printf("after  sort: ");
-        // for(int i = 0; i < MAX_PLAYERS; ++i)
-        //     printf("%p,  ", player_list[i]);
-        // printf("\n------------------------------------------------------------\n");
-
-        float scale = 0.1;
-        Vector2f size = gfx_string_get_size(scale, "P");
-        float x = 10.0;
-        float y = 10.0;
-        for(int i = 0; i < MAX_PLAYERS; ++i)
-        {
-            Player* p = player_list[i];
-            if(p->active)
-            {
-                uint32_t color = p->dead ? COLOR_RED : COLOR_WHITE;
-                gfx_draw_string(x, y, color, scale, 0.0, 1.0, true, true, "%d | %s", p->deaths, p->settings.name);
-                y += size.y + 3;
-            }
-        }
+        player_list_draw();
     }
 
     text_list_draw(text_lst);
@@ -1232,4 +1246,43 @@ Vector2f limit_rect_pos(Rect* limit, Rect* rect)
 
     // printf("adj: %.2f, %.2f\n", adj.x, adj.y);
     return adj;
+}
+
+void player_list_draw()
+{
+    Player* player_list[MAX_PLAYERS] = {0};
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+        player_list[i] = &players[i];
+
+    // printf("players    : ");
+    // for(int i = 0; i < MAX_PLAYERS; ++i)
+    //     printf("%p,  ", &players[i]);
+    // printf("\n");
+
+    // printf("before sort: ");
+    // for(int i = 0; i < MAX_PLAYERS; ++i)
+    //     printf("%p,  ", player_list[i]);
+    // printf("\n");
+
+    sort_players(player_list);
+
+    // printf("after  sort: ");
+    // for(int i = 0; i < MAX_PLAYERS; ++i)
+    //     printf("%p,  ", player_list[i]);
+    // printf("\n------------------------------------------------------------\n");
+
+    float scale = 0.1;
+    Vector2f size = gfx_string_get_size(scale, "P");
+    float x = 10.0;
+    float y = 10.0;
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        Player* p = player_list[i];
+        if(p->active)
+        {
+            uint32_t color = p->dead ? COLOR_RED : COLOR_WHITE;
+            gfx_draw_string(x, y, color, scale, 0.0, 1.0, true, true, "%d | %s", p->deaths, p->settings.name);
+            y += size.y + 3;
+        }
+    }
 }
