@@ -26,6 +26,14 @@ typedef enum
 
 typedef enum
 {
+    GAME_STATUS_LIMBO = 0,
+    GAME_STATUS_RUNNING,
+    GAME_STATUS_COMPLETE,
+    GAME_STATUS_MAX
+} GameStatus;
+
+typedef enum
+{
     SCREEN_SERVER,
     SCREEN_HOME,
     SCREEN_SETTINGS,
@@ -56,6 +64,8 @@ typedef enum
 
 extern text_list_t* text_lst;
 
+extern GameStatus game_status;
+
 extern DisplayScreen screen;
 extern bool initialized;
 extern bool back_to_menu;
@@ -71,6 +81,7 @@ extern int client_id;
 extern Timer game_timer;
 extern GameRole role;
 extern Rect world_box;
+extern Rect ready_zone;
 extern Settings menu_settings;
 
 extern bool can_target_player;

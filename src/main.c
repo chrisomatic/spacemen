@@ -29,6 +29,7 @@ TODO:
 text_list_t* text_lst = NULL;
 
 DisplayScreen screen = SCREEN_HOME;
+GameStatus game_status = GAME_STATUS_LIMBO;
 bool initialized = false;
 bool back_to_home = false;
 bool paused = false;
@@ -57,6 +58,7 @@ int mx=0, my=0;
 Timer game_timer = {0};
 GameRole role;
 Rect world_box = {0};
+Rect ready_zone;
 
 // Settings
 uint32_t background_color = 0x00303030;
@@ -258,6 +260,11 @@ void init()
     world_box.h = view_height;
     world_box.x = view_width/2.0;
     world_box.y = view_height/2.0;
+
+    ready_zone.w = 100;
+    ready_zone.h = 100;
+    ready_zone.x = view_width-200;
+    ready_zone.y = view_height-200;
 
     LOGI(" - Players.");
     players_init();

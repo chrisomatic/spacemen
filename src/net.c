@@ -12,6 +12,7 @@
 #include "core/log.h"
 #include "core/circbuf.h"
 
+#include "main.h"
 #include "net.h"
 #include "player.h"
 #include "settings.h"
@@ -104,7 +105,6 @@ static uint64_t rand64(void)
     return r;
 }
 
-static Timer game_timer = {0};
 static Timer server_timer = {0};
 
 static inline int get_packet_size(Packet* pkt)
@@ -401,8 +401,10 @@ static void server_send(PacketType type, ClientInfo* cli)
 
         case PACKET_TYPE_STATE:
         {
+            pack_u8(&pkt, (uint8_t)game_status);
+            pkt.data_len++;
+
             int num_clients = 0;
-            pkt.data_len = 1;   // fill in num_clients laters
 
             for(int i = 0; i < MAX_CLIENTS; ++i)
             {
@@ -418,7 +420,7 @@ static void server_send(PacketType type, ClientInfo* cli)
                 }
             }
 
-            pkt.data[0] = num_clients;
+            pkt.data[1] = num_clients;
 
             // if(plist->count > 0)
             {
@@ -1188,6 +1190,11 @@ void net_client_update()
                 case PACKET_TYPE_STATE:
                 {
 
+                    uint8_t gs = unpack_u8(&srvpkt, &offset);
+                    if(gs >= 0 && gs < GAME_STATUS_MAX)
+                    {
+                        game_status = gs;
+                    }
                     uint8_t num_players = unpack_u8(&srvpkt, &offset);
                     client.player_count = num_players;
 
