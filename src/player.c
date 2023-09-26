@@ -317,9 +317,15 @@ void player_update(Player* p, double delta_t)
 
     if(p == player && role != ROLE_SERVER)
     {
-        Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
-        jet_spawner->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
-        jet_spawner->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
+        float w = 32.0f;
+        if(role != ROLE_SERVER)
+        {
+            Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
+            w = r->w;
+        }
+
+        jet_spawner->pos.x = p->pos.x - 0.5*w*cosf(RAD(p->angle_deg));
+        jet_spawner->pos.y = p->pos.y + 0.5*w*sinf(RAD(p->angle_deg));
     }
 
     player_update_hit_box(p);
@@ -490,11 +496,6 @@ void player_draw(Player* p)
     {
         p->settings.sprite_index = 0;
     }
-
-    // if(p == player)
-    // {
-    //     particles_draw_spawner(jet_spawner,true, false);
-    // }
 
     gfx_draw_image_color_mask(player_image, p->settings.sprite_index, p->pos.x, p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
 
