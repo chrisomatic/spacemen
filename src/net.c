@@ -557,6 +557,7 @@ static void update_game_status(GameStatus _game_status)
             LOGN("Game Status: Complete");
             break;
         default:
+            break;
     }
 }
 
