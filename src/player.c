@@ -109,7 +109,7 @@ void players_init()
 
         memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
 
-        if(!p->jets)
+        if(role != ROLE_SERVER && !p->jets)
         {
             p->jets = particles_spawn_effect(p->pos.x,p->pos.y, 0, &particle_effects[EFFECT_JETS],0.0,true,false);
             p->jets->hidden = true;
