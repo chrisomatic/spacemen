@@ -94,6 +94,7 @@ void player_determine_winner();
 void player_hurt(Player* p, float damage);
 void player_die(Player* p);
 void players_set_ai_state();
+void player_reset(Player* p);
 
 // networking
 void player_handle_net_inputs(Player* p, double delta_t);

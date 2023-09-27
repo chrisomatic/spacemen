@@ -321,6 +321,7 @@ static bool server_assign_new_client(Address* addr, ClientInfo** cli)
         {
             *cli = &server.clients[i];
             (*cli)->client_id = i;
+            //reset player state
             return true;
         }
     }
@@ -540,6 +541,25 @@ static void server_update_players()
     }
 }
 
+static void update_game_status(GameStatus _game_status)
+{
+    game_status = _game_status;
+
+    switch(_game_status)
+    {
+        case GAME_STATUS_LIMBO:
+            LOGN("Game Status: Limbo");
+            break;
+        case GAME_STATUS_RUNNING:
+            LOGN("Game Status: Running");
+            break;
+        case GAME_STATUS_COMPLETE:
+            LOGN("Game Status: Complete");
+            break;
+        default:
+    }
+}
+
 static void server_update_game_status()
 {
     switch(game_status)
@@ -549,7 +569,8 @@ static void server_update_game_status()
             if(server.num_clients < 2)
                 break;
 
-            bool all_players_in_zone = true;
+            int num_players_in_zone = 0;
+            int num_connected_players = 0;
 
             // check if all players are in ready_zone
             for(int i = 0; i < MAX_CLIENTS; ++i)
@@ -558,30 +579,87 @@ static void server_update_game_status()
                 if(cli->state != CONNECTED)
                     continue;
 
+                num_connected_players++;
+
                 Player* p = &players[cli->client_id];
 
-                if(!rectangles_colliding(&p->hit_box, &ready_zone))
+                if(rectangles_colliding(&p->hit_box, &ready_zone))
                 {
-                    all_players_in_zone = false;
-                    break;
+                    num_players_in_zone++;
                 }
             }
 
-            if(all_players_in_zone)
+            if(num_connected_players >= 2 && num_players_in_zone == num_connected_players)
             {
-                // start game!
-                game_status = GAME_STATUS_RUNNING;
+                // set everyone starting position!
+                for(int i = 0; i < MAX_CLIENTS; ++i)
+                {
+                    ClientInfo* cli = &server.clients[i];
+                    if(cli->state != CONNECTED)
+                        continue;
+
+                    num_connected_players++;
+
+                    Player* p = &players[cli->client_id];
+
+                    p->hp = p->hp_max;
+                    p->pos.x = rand() % (view_width-32)+16;
+                    p->pos.y = rand() % (view_height-32)+16;
+                }
+
+                update_game_status(GAME_STATUS_RUNNING);
             }
 
         }   break;
         case GAME_STATUS_RUNNING:
         {
             // check to see if there is a winner
+            int num_connected_players = 0;
+            int num_dead_players = 0;
+
+            // check if all players are in ready_zone
+            for(int i = 0; i < MAX_CLIENTS; ++i)
+            {
+                ClientInfo* cli = &server.clients[i];
+                if(cli->state != CONNECTED)
+                    continue;
+
+                num_connected_players++;
+
+                Player* p = &players[cli->client_id];
+                if(p->dead)
+                {
+                    num_dead_players++;
+                }
+            }
+
+            if(num_connected_players == 1 || (num_connected_players - num_dead_players) == 1)
+            {
+                update_game_status(GAME_STATUS_COMPLETE);
+            }
+            else if(num_connected_players == 0)
+            {
+                update_game_status(GAME_STATUS_LIMBO);
+            }
 
         }   break;
 
         case GAME_STATUS_COMPLETE:
         {
+            for(int i = 0; i < MAX_CLIENTS; ++i)
+            {
+                ClientInfo* cli = &server.clients[i];
+                if(cli->state != CONNECTED)
+                    continue;
+
+                Player* p = &players[cli->client_id];
+
+                player_reset(p);
+
+                server_send(PACKET_TYPE_STATE,cli);
+            }
+
+            update_game_status(GAME_STATUS_LIMBO);
 
         }   break;
     }
@@ -727,6 +805,8 @@ int net_server_start()
                     {
                         cli->state = SENDING_CHALLENGE_RESPONSE;
                         players[cli->client_id].active = true;
+
+                        player_reset(&players[cli->client_id]);
 
                         server_send(PACKET_TYPE_CONNECT_ACCEPTED,cli);
                         server_send(PACKET_TYPE_STATE,cli);

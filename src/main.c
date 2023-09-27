@@ -308,6 +308,11 @@ void init_server()
     world_box.x = view_width/2.0;
     world_box.y = view_height/2.0;
 
+    ready_zone.w = 100;
+    ready_zone.h = 100;
+    ready_zone.x = view_width-200;
+    ready_zone.y = view_height-200;
+
     gfx_image_init();
     players_init();
     projectile_init();
@@ -821,7 +826,14 @@ void update_game_end(float _dt, bool is_client)
     game_end_counter -= _dt;
     if(game_end_counter <= 0.0)
     {
-        screen = SCREEN_HOME;
+        if(role == ROLE_CLIENT)
+        {
+            screen = SCREEN_GAME_START;
+        }
+        else
+        {
+            screen = SCREEN_HOME;
+        }
     }
 }
 

@@ -15,8 +15,6 @@ Player* player2 = NULL;
 int player_image = -1;
 int player_count = 1;
 
-static void player_reset(Player* p);
-
 ParticleSpawner* jet_spawner = NULL;
 
 void player_init_local()
@@ -477,6 +475,7 @@ void player_hurt(Player* p, float damage)
 {
     if(!p->active) return;
     if(p->dead) return;
+    if(game_status == GAME_STATUS_LIMBO) return;
 
     p->hp -= damage;
     if(p->hp <= 0)
@@ -573,7 +572,7 @@ void player_draw(Player* p)
     }
 }
 
-static void player_reset(Player* p)
+void player_reset(Player* p)
 {
     p->pos.x = VIEW_WIDTH/2.0;
     p->pos.y = VIEW_HEIGHT/2.0;
@@ -581,6 +580,7 @@ static void player_reset(Player* p)
     p->vel.y = 0.0;
     p->energy = MAX_ENERGY;
     p->hp = p->hp_max;
+    p->dead = false;
 }
 
 void players_set_ai_state()
