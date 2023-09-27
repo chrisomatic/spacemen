@@ -15,7 +15,6 @@ Player* player2 = NULL;
 int player_image = -1;
 int player_count = 1;
 
-ParticleSpawner* jet_spawner = NULL;
 
 void player_init_local()
 {
@@ -23,11 +22,10 @@ void player_init_local()
 
     player->active = true;
 
-    ParticleEffect jets = {0};
-    memcpy(&jets, &particle_effects[EFFECT_JETS],sizeof(ParticleEffect));
-    if(jet_spawner == NULL)
-        jet_spawner = particles_spawn_effect(player->pos.x,player->pos.y, 0, &jets,0.0,true,false);
-
+    if(player->jets == NULL)
+    {
+        player->jets = particles_spawn_effect(player->pos.x,player->pos.y, 0, &particle_effects[EFFECT_JETS],0.0,true,false);
+    }
 }
 
 void player_set_controls()
@@ -110,6 +108,12 @@ void players_init()
         sprintf(p->settings.name, "Player %d", i);
 
         memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
+
+        if(!p->jets)
+        {
+            p->jets = particles_spawn_effect(p->pos.x,p->pos.y, 0, &particle_effects[EFFECT_JETS],0.0,true,false);
+            p->jets->hidden = true;
+        }
     }
 
 }
@@ -130,6 +134,7 @@ void player_set_active_state(uint8_t id, bool active)
     if(p == NULL) return;
 
     p->active = active;
+    p->jets->hidden = !active;
 }
 
 
@@ -315,15 +320,12 @@ void player_update(Player* p, double delta_t)
 
     if(p == player && role != ROLE_SERVER)
     {
-        float w = 32.0f;
-        if(role != ROLE_SERVER)
+        if(p->jets)
         {
             Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
-            w = r->w;
+            p->jets->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
+            p->jets->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
         }
-
-        jet_spawner->pos.x = p->pos.x - 0.5*w*cosf(RAD(p->angle_deg));
-        jet_spawner->pos.y = p->pos.y + 0.5*w*sinf(RAD(p->angle_deg));
     }
 
     player_update_hit_box(p);

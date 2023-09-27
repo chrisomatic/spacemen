@@ -137,6 +137,12 @@ void particles_init()
 
 ParticleSpawner* particles_spawn_effect(float x, float y, int z, ParticleEffect* effect, float lifetime, bool in_world, bool hidden)
 {
+    if(!spawner_list)
+    {
+        LOGW("Particles spawner list not initialized. Consider running particles_init");
+        return NULL;
+    }
+
     if(list_is_full(spawner_list))
     {
         LOGW("Too many spawners!");
@@ -292,7 +298,7 @@ void particles_draw_spawner(ParticleSpawner* spawner, bool ignore_light, bool ad
         for(int j = 0; j < spawner->particle_list->count; ++j)
         {
             Particle* p = &spawner->particles[j];
-            gfx_sprite_batch_add(spawner->effect.img_index, spawner->effect.sprite_index, p->pos.x, p->pos.y, p->color, false, p->scale, p->rotation, p->opacity, false,ignore_light,spawner->effect.blend_additive);
+            gfx_sprite_batch_add(particles_image, spawner->effect.sprite_index, p->pos.x, p->pos.y, p->color, false, p->scale, p->rotation, p->opacity, false,ignore_light,spawner->effect.blend_additive);
         }
         if(!add_to_existing_batch) gfx_sprite_batch_draw();
     }

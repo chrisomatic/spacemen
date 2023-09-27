@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include "net.h"
+#include "particles.h"
 #include "settings.h"
 
 #define MAX_PLAYERS 8
@@ -62,6 +63,8 @@ typedef struct
     Settings settings;
 
     PlayerAction actions[PLAYER_ACTION_MAX];
+
+    ParticleSpawner* jets;
 
     // networking
     NetPlayerInput input;

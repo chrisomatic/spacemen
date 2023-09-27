@@ -270,17 +270,17 @@ void init()
     ready_zone.x = view_width-200;
     ready_zone.y = view_height-200;
 
+    LOGI(" - Effects.");
+    effects_load_all();
+
+    LOGI(" - Particles.");
+    particles_init();
+
     LOGI(" - Players.");
     players_init();
 
     LOGI(" - Projectile.");
     projectile_init();
-
-    LOGI(" - Particles.");
-    particles_init();
-
-    LOGI(" - Effects.");
-    effects_load_all();
 
     LOGI(" - Editor.");
     editor_init();
@@ -735,6 +735,7 @@ void draw_game_start(bool is_client)
     uint8_t g = background_color >> 8;
     uint8_t b = background_color >> 0;
 
+    gfx_clear_lines();
     gfx_clear_buffer(r,g,b);
 
     stars_draw();
@@ -970,9 +971,11 @@ void simulate(double dt)
 
 void simulate_client(double dt)
 {
-
     //projectile_update(dt);
     //player_update(player,dt); // client-side prediction
+
+    particles_update(dt);
+
     player_handle_net_inputs(player, dt);
 
     for(int i = 0; i < plist->count; ++i)
@@ -985,8 +988,17 @@ void simulate_client(double dt)
     {
         if(players[i].active)
         {
-            player_lerp(&players[i], dt);
-            player_update_hit_box(&players[i]);
+            Player* p = &players[i];
+
+            player_lerp(p, dt);
+            player_update_hit_box(p);
+
+            if(p->jets)
+            {
+                Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
+                p->jets->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
+                p->jets->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
+            }
         }
     }
 

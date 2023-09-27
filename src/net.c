@@ -1352,7 +1352,9 @@ void net_client_update()
                         //LOGN("      Pos: %f, %f. Angle: %f", pos.x, pos.y, angle);
 
                         Player* p = &players[client_id];
+
                         p->active = true;
+                        p->jets->hidden = false;
 
                         p->lerp_t = 0.0;
 
