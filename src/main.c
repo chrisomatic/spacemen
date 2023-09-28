@@ -637,7 +637,7 @@ void update_game_start(float _dt, bool is_client)
 
     if(!is_client && initiate_game)
     {
-        // game_status = GAME_STATUS_RUNNING;
+        game_status = GAME_STATUS_RUNNING;
         players_set_ai_state();
         screen = SCREEN_GAME;
         return;
@@ -704,26 +704,13 @@ void update_game_start(float _dt, bool is_client)
         {
             net_client_update();
             simulate_client(_dt); // client-side prediction
+
             if(!net_client_is_connected())
             {
                 text_list_add(text_lst, 2.0, "Got disconnected from server.");
                 screen = SCREEN_HOME;
             }
         }
-
-        // if(client_id != -1)
-        // {
-        //     LOGN("Client ID: %d", client_id);
-        //     player = &players[client_id];
-
-        //     memcpy(&player->settings, &menu_settings, sizeof(Settings));
-        //     player_init_local();
-
-        //     net_client_send_settings();
-
-        //     // screen = SCREEN_GAME;
-        //     return;
-        // }
 
     }
 
@@ -752,6 +739,25 @@ void draw_game_start(bool is_client)
         }
         else
         {
+
+            // TODO: send messages
+            imgui_begin_panel("Message", view_width/2.0,0, false);
+
+                char* opts[] = {"0","1","2","3","4","5","6","7","ALL"};
+                static int to_sel = 0;
+                to_sel = imgui_dropdown(opts, MAX_PLAYERS+1, "Select Player", &to_sel);
+
+                imgui_text("Message:");
+                static char msg[255+1] = {0};
+                imgui_text_box("##Messagebox", msg, 255);
+
+                if(imgui_button("Send"))
+                {
+                    if(to_sel >= MAX_PLAYERS)
+                        to_sel = TO_ALL;
+                    net_client_send_message(to_sel, "%s", msg);
+                }
+            imgui_end();
 
             gfx_draw_rect(&ready_zone, COLOR_GREEN, 0.0, 1.0, 1.0, false, true);
             gfx_draw_string(ready_zone.x-ready_zone.w/2.0-10, ready_zone.y-ready_zone.h/2.0-10, COLOR_GREEN, 0.3, 0.0, 1.0, true, true, "READY");

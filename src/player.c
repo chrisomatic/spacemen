@@ -438,11 +438,13 @@ void player_die(Player* p)
         p->dead = true;
         printf("%s is dead!\n", p->settings.name);
         text_list_add(text_lst, 4.0, "%s is dead", p->settings.name);
+        server_send_message(TO_ALL, FROM_SERVER, "%s is dead", p->settings.name);
     }
     else
     {
         player_reset(p);
         text_list_add(text_lst, 3.0, "%s died", p->settings.name);
+        server_send_message(TO_ALL, FROM_SERVER, "%s died", p->settings.name);
     }
 
     player_determine_winner();

@@ -7,6 +7,9 @@
 #define MAX_CLIENTS     MAX_PLAYERS
 #define MAX_PACKET_DATA_SIZE 1024
 
+#define FROM_SERVER 0xFF    //for messaging
+#define TO_ALL      0xFF    //for messaging
+
 #ifdef __GNUC__
 #define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
 #endif
@@ -33,6 +36,7 @@ typedef enum
     PACKET_TYPE_INPUT,
     PACKET_TYPE_SETTINGS,
     PACKET_TYPE_STATE,
+    PACKET_TYPE_MESSAGE,
     PACKET_TYPE_ERROR,
 } PacketType;
 
@@ -114,6 +118,7 @@ extern char* server_ip_address;
 
 // Server
 int net_server_start();
+void server_send_message(uint8_t to, uint8_t from, char* fmt, ...);
 
 // Client
 bool net_client_init();
@@ -137,6 +142,7 @@ void net_client_get_server_ip_str(char* ip_str);
 bool net_client_data_waiting();
 double net_client_get_rtt();
 void net_client_send_settings();
+void net_client_send_message(uint8_t to, char* fmt, ...);
 int net_client_send(uint8_t* data, uint32_t len);
 int net_client_recv(Packet* pkt);
 void net_client_deinit();

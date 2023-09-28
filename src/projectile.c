@@ -250,6 +250,8 @@ void projectile_handle_collisions(float delta_t)
             {
                 text_list_add(text_lst, 1.0, "%s hit %s", player[p->player_id].settings.name, player[j].settings.name);
 
+                server_send_message(j, FROM_SERVER, "%s hit you", player[p->player_id].settings.name);
+
                 player_hurt(&players[j], p->damage);
                 p->dead = true;
                 break;

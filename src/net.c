@@ -77,6 +77,7 @@ static NetPlayerInput net_player_inputs[INPUT_QUEUE_MAX]; // shared
 static int input_count = 0;
 static int inputs_per_packet = 1.0; //(TARGET_FPS/TICK_RATE);
 
+
 static inline void pack_u8(Packet* pkt, uint8_t d);
 static inline void pack_u16(Packet* pkt, uint16_t d);
 static inline void pack_u32(Packet* pkt, uint32_t d);
@@ -133,6 +134,7 @@ static char* packet_type_to_str(PacketType type)
         case PACKET_TYPE_INPUT: return "INPUT";
         case PACKET_TYPE_SETTINGS: return "SETTINGS";
         case PACKET_TYPE_STATE: return "STATE";
+        case PACKET_TYPE_MESSAGE: return "MESSAGE";
         case PACKET_TYPE_ERROR: return "ERROR";
         default: return "UNKNOWN";
     }
@@ -266,7 +268,7 @@ static bool validate_packet_format(Packet* pkt)
         return false;
     }
 
-    if(pkt->hdr.type < PACKET_TYPE_INIT || pkt->hdr.type > PACKET_TYPE_STATE)
+    if(pkt->hdr.type < PACKET_TYPE_INIT || pkt->hdr.type > PACKET_TYPE_ERROR)
     {
         LOGN("Invalid Packet Type: %d", pkt->hdr.type);
         return false;
@@ -387,6 +389,8 @@ static void server_send(PacketType type, ClientInfo* cli)
             cli->state = CONNECTED;
             pack_u8(&pkt, (uint8_t)cli->client_id);
             net_send(&server.info,&cli->address,&pkt);
+
+            server_send_message(TO_ALL, FROM_SERVER, "client added %u", cli->client_id);
         } break;
 
         case PACKET_TYPE_CONNECT_REJECTED:
@@ -851,6 +855,22 @@ int net_server_start()
                         }
                     } break;
 
+                    case PACKET_TYPE_MESSAGE:
+                    {
+                        uint8_t from = cli->client_id;
+                        uint8_t to = unpack_u8(&recv_pkt, &offset);
+                        char msg[255+1] = {0};
+                        uint8_t msg_len = unpack_string(&recv_pkt, msg, 255, &offset);
+
+#if SERVER_PRINT_VERBOSE
+                        LOGN("received message");
+                        LOGN("  from: %u", from);
+                        LOGN("  to:   %u", to);
+                        LOGN("  msg:  %s", msg);
+#endif
+                        server_send_message(to, from, "%s",msg);
+                    } break;
+
                     case PACKET_TYPE_PING:
                     {
                         server_send(PACKET_TYPE_PING, cli);
@@ -930,6 +950,58 @@ int net_server_start()
     }
 }
 
+void server_send_message(uint8_t to, uint8_t from, char* fmt, ...)
+{
+    if(role != ROLE_SERVER)
+    {
+        return;
+    }
+
+    Packet pkt = {
+        .hdr.game_id = GAME_ID,
+        .hdr.id = server.info.local_latest_packet_id,
+        // .hdr.ack = cli->remote_latest_packet_id,
+        .hdr.type = PACKET_TYPE_MESSAGE
+    };
+
+    va_list args, args2;
+    va_start(args, fmt);
+    va_copy(args2, args);
+    int size = vsnprintf(NULL, 0, fmt, args);
+    char* msg = calloc(size+1, sizeof(char));
+    if(!msg) return;
+    vsnprintf(msg, size+1, fmt, args2);
+    va_end(args);
+    va_end(args2);
+
+    pack_u8(&pkt, from);
+    pack_string(&pkt, msg, 255);
+
+    free(msg);
+
+    if(to == 0xFF) //send to all
+    {
+        for(int i = 0; i < MAX_CLIENTS; ++i)
+        {
+            ClientInfo* cli = &server.clients[i];
+            if(cli == NULL) continue;
+            if(cli->state != CONNECTED) continue;
+
+            pkt.hdr.ack = cli->remote_latest_packet_id;
+            net_send(&server.info,&cli->address,&pkt);
+        }
+    }
+    else
+    {
+        if(to > MAX_PLAYERS) return;
+        ClientInfo* cli = &server.clients[to];
+        if(cli == NULL) return;
+        if(cli->state != CONNECTED) return;
+
+        pkt.hdr.ack = cli->remote_latest_packet_id;
+        net_send(&server.info,&cli->address,&pkt);
+    }
+}
 
 // =========
 // @CLIENT
@@ -1293,7 +1365,7 @@ int net_client_connect_recv_data()
             {
                 uint8_t reason = unpack_u8(&srvpkt, &offset);
                 LOGN("Rejection Reason: %s (%02X)", connect_reject_reason_to_str(reason), reason);
-                client.state = DISCONNECTED; // TODO: is this okay?
+                client.state = DISCONNECTED;
                 return CONN_RC_REJECTED;
             } break;
         }
@@ -1468,6 +1540,22 @@ void net_client_update()
                     client.rtt = 1000.0f*(client.time_of_last_received_ping - client.time_of_last_ping);
                 } break;
 
+                case PACKET_TYPE_MESSAGE:
+                {
+                    uint8_t from = unpack_u8(&srvpkt, &offset);
+
+                    char msg[255+1] = {0};
+                    uint8_t msg_len = unpack_string(&srvpkt, msg, 255, &offset);
+
+                    char* from_str = "server";
+                    if(from < MAX_PLAYERS)
+                    {
+                        from_str = players[from].settings.name;
+                    }
+
+                    text_list_add(text_lst, 5.0, "%s: %s", from_str, msg);
+                } break;
+
                 case PACKET_TYPE_DISCONNECT:
                     client.state = DISCONNECTED;
                     break;
@@ -1514,6 +1602,40 @@ void net_client_send_settings()
 {
     client_send(PACKET_TYPE_SETTINGS);
 }
+
+void net_client_send_message(uint8_t to, char* fmt, ...)
+{
+    if(role != ROLE_CLIENT)
+    {
+        return;
+    }
+
+    Packet pkt = {
+        .hdr.game_id = GAME_ID,
+        .hdr.id = client.info.local_latest_packet_id,
+        .hdr.ack = client.info.remote_latest_packet_id,
+        .hdr.type = PACKET_TYPE_MESSAGE
+    };
+
+    va_list args, args2;
+    va_start(args, fmt);
+    va_copy(args2, args);
+    int size = vsnprintf(NULL, 0, fmt, args);
+    char* msg = calloc(size+1, sizeof(char));
+    if(!msg) return;
+    vsnprintf(msg, size+1, fmt, args2);
+    va_end(args);
+    va_end(args2);
+
+    pack_bytes(&pkt, (uint8_t*)client.xor_salts, 8);
+    pack_u8(&pkt, to);
+    pack_string(&pkt, msg, 255);
+
+    free(msg);
+
+    net_send(&client.info,&server.address,&pkt);
+}
+
 
 int net_client_send(uint8_t* data, uint32_t len)
 {
