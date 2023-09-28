@@ -3,6 +3,7 @@
 #include "effects.h"
 
 ParticleEffect particle_effects[MAX_PARTICLE_EFFECTS];
+int num_effects = 0;
 
 EffectEntry effect_map[] = {
     {EFFECT_GUN_SMOKE1,"gun_smoke.effect"},
@@ -39,7 +40,7 @@ static int get_effect_map_index(char* file_name)
 void effects_load_all()
 {
     char files[32][32] = {0};
-    int num_effects = io_get_files_in_dir("src/effects",".effect", files);
+    num_effects = io_get_files_in_dir("src/effects",".effect", files);
 
     LOGI("Num effects: %d",num_effects);
 
@@ -61,6 +62,7 @@ void effects_load_all()
         else
         {
             effects_load(full_path,&particle_effects[index]);
+            strncpy(particle_effects[index].name,filename,100);
             LOGI("%d: %s",i,filename);
         }
     }

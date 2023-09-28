@@ -20,6 +20,7 @@ gcc core/gfx.c \
     projectile.c \
     effects.c \
     editor.c \
+    powerups.c \
     main.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm \

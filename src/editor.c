@@ -21,6 +21,10 @@ int player_selection = 0;
 static ParticleSpawner* particle_spawner; 
 static char particles_file_name[20] = {0};
 
+static char* effect_options[100] = {0};
+static int prior_selected_effect = 0;
+static int selected_effect = 0;
+
 static void randomize_effect(ParticleEffect* effect);
 
 void editor_init()
@@ -52,9 +56,29 @@ void editor_init()
 
     randomize_effect(&effect);
 
-    particle_spawner = particles_spawn_effect(200, 120, 1, &effect, 0, false, true);
+    particle_spawner = particles_spawn_effect(view_width-200, 200, 1, &effect, 0, false, true);
 }
 
+
+static void load_effect_options()
+{
+    effects_load_all();
+
+    for(int i = 0; i < num_effects+1; ++i)
+    {
+        if(effect_options[i])
+            free(effect_options[i]);
+    }
+    effect_options[0] = calloc(100,sizeof(char));
+    strncpy(effect_options[0], "*New*", 5);
+
+    for(int i = 0; i < num_effects; ++i)
+    {
+        effect_options[i+1] = calloc(100,sizeof(char));
+        strncpy(effect_options[i+1],particle_effects[i].name, 99);
+    }
+
+}
 
 void editor_draw()
 {
@@ -63,6 +87,9 @@ void editor_draw()
         imgui_newline();
         char* buttons[] = {"Players", "Projectiles", "Particles", "Console"};
         int selection = imgui_button_select(IM_ARRAYSIZE(buttons), buttons, "");
+        imgui_horizontal_line(1);
+
+        particle_spawner->hidden = true;
 
         switch(selection)
         {
@@ -174,20 +201,38 @@ void editor_draw()
                 ParticleEffect* effect = &particle_spawner->effect;
                 particle_spawner->hidden = false;
 
+                gfx_draw_string(view_width-300, 100, 0xAAAAAAAA, 0.2, 0.0, 1.0, false, false, "Preview");
+                gfx_draw_rect_xywh(view_width-200, 200, 200, 200, 0x00000000, 0.0, 1.0, 0.5, true,false);
+
                 int big = 12;
                 imgui_set_text_size(10);
 
+                imgui_newline();
+
                 imgui_horizontal_begin();
+
                 if(imgui_button("Randomize##particle_spawner"))
                 {
                     randomize_effect(effect);
                 }
                 if(imgui_button("Reload Effects##particle_spawner"))
                 {
-                    effects_load_all();
+                    load_effect_options();
                 }
 
+                if(!effect_options[0])
+                    load_effect_options();
+
                 imgui_horizontal_end();
+
+                selected_effect = imgui_dropdown(effect_options, num_effects, "Effects", &selected_effect);
+                if(selected_effect > 0 && prior_selected_effect != selected_effect)
+                {
+                    prior_selected_effect = selected_effect;
+                    memcpy(effect,&particle_effects[selected_effect-1],sizeof(ParticleEffect));
+                }
+
+                imgui_horizontal_line(1);
 
                 //imgui_set_slider_width(60);
                 imgui_text_sized(8,"Particle Count: %d",particle_spawner->particle_list->count);
@@ -274,28 +319,18 @@ void editor_draw()
                 imgui_checkbox("Blend Addtive",&effect->blend_additive);
                 imgui_newline();
 
-                imgui_horizontal_begin();
+                imgui_text_box("Filename##file_name_particles",particles_file_name,IM_ARRAYSIZE(particles_file_name));
 
-                    imgui_text_box("##file_name_particles",particles_file_name,IM_ARRAYSIZE(particles_file_name));
+                char file_path[64]= {0};
+                snprintf(file_path,63,"src/effects/%s.effect",particles_file_name);
 
-                    char file_path[64]= {0};
-                    snprintf(file_path,63,"src/effects/%s.effect",particles_file_name);
-
+                if(!STR_EMPTY(particles_file_name))
+                {
                     if(imgui_button("Save##particles"))
                     {
                         effects_save(file_path, effect);
                     }
-                    if(imgui_button("Load##particles"))
-                    {
-                        ParticleEffect loaded_effect = {0};
-                        bool res = effects_load(file_path, &loaded_effect);
-                        if(res)
-                        {
-                            memcpy(effect,&loaded_effect,sizeof(ParticleEffect));
-                        }
-                    }
-
-                imgui_horizontal_end();
+                }
 
                 if(io_file_exists(file_path))
                 {

@@ -41,6 +41,9 @@ typedef struct
     int img_index;
     bool use_sprite;
     bool blend_additive;
+
+    char name[100];
+
 } ParticleEffect;
 
 typedef struct

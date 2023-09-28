@@ -32,6 +32,7 @@ typedef struct
 } EffectEntry;
 
 extern ParticleEffect particle_effects[MAX_PARTICLE_EFFECTS];
+extern int num_effects;
 
 void effects_load_all();
 bool effects_save(char* file_path, ParticleEffect* effect);

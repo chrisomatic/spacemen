@@ -603,6 +603,12 @@ int imgui_button_select(int num_buttons, char* button_labels[], char* label)
 
 int imgui_dropdown(char* options[], int num_options, char* label, int* selected_index)
 {
+    if(!options)
+        return 0;
+
+    if(!options[0])
+        return 0;
+
     if(num_options < 0 || num_options >= 32)
         return 0;
 
@@ -627,10 +633,13 @@ int imgui_dropdown(char* options[], int num_options, char* label, int* selected_
 
     for(int i = 0; i < num_options; ++i)
     {
-        Vector2f text_size = gfx_string_get_size(theme.text_scale, options[i]);
-        if(text_size.x > max_width)
+        if(options[i])
         {
-            max_width = text_size.x;
+            Vector2f text_size = gfx_string_get_size(theme.text_scale, options[i]);
+            if(text_size.x > max_width)
+            {
+                max_width = text_size.x;
+            }
         }
     }
 

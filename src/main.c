@@ -14,6 +14,7 @@
 #include "effects.h"
 #include "settings.h"
 #include "editor.h"
+#include "powerups.h"
 #include "text_list.h"
 
 /*
@@ -282,8 +283,12 @@ void init()
     LOGI(" - Projectile.");
     projectile_init();
 
+    LOGI(" - Powerups.");
+    powerups_init();
+
     LOGI(" - Editor.");
     editor_init();
+
 
     LOGI(" - Settings.");
     settings_load();
@@ -894,6 +899,7 @@ void simulate(double dt)
     if(!paused)
     {
         projectile_update(dt);
+        powerups_update(dt);
         particles_update(dt);
         // stars_update();
         // text_list_update(text_lst, dt);
@@ -1097,6 +1103,10 @@ void draw_game(bool is_client)
     {
         projectile_draw(&projectiles[i]);
     }
+
+    // powerups
+    // -----------------------------------------------------------------------
+    powerups_draw();
 
     particles_draw_layer(0);
 
