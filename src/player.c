@@ -547,6 +547,8 @@ void player_heal(Player* p, float hp)
     {
         p->hp = p->hp_max;
     }
+
+    particles_spawn_effect(p->pos.x, p->pos.y, 1, &particle_effects[EFFECT_HEAL1], 1.0, true, false);
 }
 
 void player_draw(Player* p)

@@ -38,6 +38,11 @@ static void func_health20(Player* player, bool expired)
     player_heal(player, 20.0);
 }
 
+static void func_healthfull(Player* player, bool expired)
+{
+    player->hp = player->hp_max;
+}
+
 static void func_invincibility(Player* player, bool expired)
 {
     if(expired)
@@ -92,6 +97,10 @@ void powerups_add(float x, float y, PowerupType type)
         case POWERUP_TYPE_HEALTH:
             pup.temporary = false;
             pup.func = func_health20;
+            break;
+        case POWERUP_TYPE_HEALTH_FULL:
+            pup.temporary = false;
+            pup.func = func_healthfull;
             break;
         case POWERUP_TYPE_INVINCIBILITY:
             pup.temporary = true;

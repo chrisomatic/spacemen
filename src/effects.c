@@ -2,12 +2,13 @@
 #include "log.h"
 #include "effects.h"
 
-ParticleEffect particle_effects[MAX_PARTICLE_EFFECTS];
+ParticleEffect particle_effects[EFFECT_MAX];
 int num_effects = 0;
 
 EffectEntry effect_map[] = {
     {EFFECT_GUN_SMOKE1,"gun_smoke.effect"},
     {EFFECT_SPARKS1,"sparks1.effect"},
+    {EFFECT_HEAL1,"heal1.effect"},
     {EFFECT_BLOOD1,"blood1.effect"},
     {EFFECT_DEBRIS1,"debris1.effect"},
     {EFFECT_MELEE1,"melee1.effect"},
@@ -51,11 +52,12 @@ void effects_load_all()
         snprintf(full_path,99,"src/effects/%s",filename);
         printf("files[%d]: %s\n",i, filename);
         int index = get_effect_map_index(filename);
+        printf("Loading %s into index %d\n",filename, index);
         if(index == -1)
         {
             LOGW("Failed to map effect %s",filename);
         }
-        else if(index >= MAX_PARTICLE_EFFECTS)
+        else if(index >= EFFECT_MAX)
         {
             LOGW("Map effect is out of max particles range, %d",index);
         }
@@ -63,6 +65,7 @@ void effects_load_all()
         {
             effects_load(full_path,&particle_effects[index]);
             strncpy(particle_effects[index].name,filename,100);
+
             LOGI("%d: %s",i,filename);
         }
     }

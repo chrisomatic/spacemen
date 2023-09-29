@@ -2,12 +2,11 @@
 
 #include "particles.h"
 
-#define MAX_PARTICLE_EFFECTS 16
-
 typedef enum
 {
     EFFECT_GUN_SMOKE1,
     EFFECT_SPARKS1,
+    EFFECT_HEAL1,
     EFFECT_BLOOD1,
     EFFECT_DEBRIS1,
     EFFECT_MELEE1,
@@ -31,7 +30,7 @@ typedef struct
     char* file_name;
 } EffectEntry;
 
-extern ParticleEffect particle_effects[MAX_PARTICLE_EFFECTS];
+extern ParticleEffect particle_effects[EFFECT_MAX];
 extern int num_effects;
 
 void effects_load_all();

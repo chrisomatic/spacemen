@@ -99,6 +99,7 @@ void print_particle_effect(ParticleEffect* e)
     printf("  burst_count: %d %d\n", e->burst_count_min, e->burst_count_max);
     printf("  sprite_index: %d\n", e->sprite_index);
     printf("  use_sprite: %s\n", e->use_sprite ? "true" : "false");
+    printf("  name: %s\n", e->name);
     printf("===================\n");
 }
 
