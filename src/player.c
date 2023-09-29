@@ -94,7 +94,7 @@ void players_init()
         p->vel.y = 0.0;
         p->angle_deg = 90.0;
         p->accel_factor = 10.0;
-        p->turn_rate = 5.0;
+        p->turn_rate = 7.0;
         p->velocity_limit = 1000.0;
         p->energy = MAX_ENERGY/2.0;
         p->force_field = false;
@@ -274,13 +274,18 @@ void player_update(Player* p, double delta_t)
 
     float angle = RAD(p->angle_deg);
 
-    if(fwd)
+    if(fwd || bkwd)
     {
 
         if(fwd)
         {
             p->vel.x += p->accel_factor*acc_factor_adj*cos(angle);
             p->vel.y -= p->accel_factor*acc_factor_adj*sin(angle);
+        }
+        if(bkwd)
+        {
+            p->vel.x -= p->accel_factor*acc_factor_adj*cos(angle);
+            p->vel.y += p->accel_factor*acc_factor_adj*sin(angle);
         }
 
         float D = p->velocity_limit;
@@ -294,14 +299,16 @@ void player_update(Player* p, double delta_t)
             p->vel.y *= factor;
             p->vel.x *= factor;
         }
-
     }
-
-    if(bkwd)
+    else
     {
         p->vel.x *= (55 * delta_t);
         p->vel.y *= (55 * delta_t);
     }
+
+    //if(bkwd)
+   // {
+    //}
 
     if((p == player || (p == player2 && !p->ai)) && easy_movement && fwd)
     {
