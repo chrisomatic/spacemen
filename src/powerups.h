@@ -4,17 +4,19 @@
 
 #define MAX_POWERUPS 100
 
-typedef void (*powerup_func)(Player* player, bool picked_up, bool expired);
+typedef void (*powerup_func)(Player* player, bool expired);
 
 typedef enum
 {
     POWERUP_TYPE_NONE,
     POWERUP_TYPE_HEALTH,
+    POWERUP_TYPE_INVINCIBILITY,
     POWERUP_TYPE_MAX,
 } PowerupType;
 
 typedef struct
 {
+    Vector2f base_pos;
     Vector2f pos;
     float lifetime;
     float lifetime_max;
@@ -23,10 +25,14 @@ typedef struct
     bool picked_up;
     bool temporary;
     float duration;
+    float duration_max;
+    Rect hit_box;
+    Player* picked_up_player;
 } Powerup;
-
 
 void powerups_init();
 void powerups_add(float x, float y, PowerupType type);
 void powerups_update(double dt);
 void powerups_draw();
+Powerup* powerups_get_list();
+int powerups_get_count();

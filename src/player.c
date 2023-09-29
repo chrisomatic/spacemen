@@ -6,6 +6,7 @@
 #include "core/window.h"
 #include "core/particles.h"
 #include "core/text_list.h"
+#include "powerups.h"
 #include "effects.h"
 
 Player players[MAX_PLAYERS] = {0};
@@ -98,6 +99,7 @@ void players_init()
         p->velocity_limit = 1000.0;
         p->energy = MAX_ENERGY/2.0;
         p->force_field = false;
+        p->invincible = false;
         p->hp_max = 100.0;
         p->hp = p->hp_max;
 
@@ -261,7 +263,6 @@ void player_update(Player* p, double delta_t)
 
     }
 
-
     float acc_factor_adj = 1.0;
     float turn_factor_adj = 1.0;
     if(scum)
@@ -411,6 +412,37 @@ void player_update(Player* p, double delta_t)
         }
     }
 
+    // check collisions with powerups
+    int num_powerups = powerups_get_count();
+    Powerup* powerups = powerups_get_list();
+
+    for(int i = 0; i < num_powerups; ++i)
+    {
+        Powerup* pup = &powerups[i];
+        if(pup->picked_up)
+            continue;
+
+        // simple check
+        bool c1 = rectangles_colliding(&p->hit_box, &pup->hit_box);
+        if(c1)
+        {
+            pup->picked_up = true;
+            pup->picked_up_player = p;
+            pup->func(p, false);
+            continue;
+        }
+
+        // complex check
+        bool c2 = are_rects_colliding(&p->hit_box_prior, &p->hit_box, &pup->hit_box);
+        if(c2)
+        {
+            pup->picked_up = true;
+            pup->picked_up_player = p;
+            pup->func(p, false);
+            continue;
+        }
+    }
+
     // TEST
     // player_hurt(p,0.1);
 
@@ -481,6 +513,7 @@ void player_hurt(Player* p, float damage)
 {
     if(!p->active) return;
     if(p->dead) return;
+    if(p->invincible) return;
     if(game_status == GAME_STATUS_LIMBO) return;
 
     p->hp -= damage;
@@ -488,6 +521,18 @@ void player_hurt(Player* p, float damage)
     {
         p->hp = 0;
         player_die(p);
+    }
+}
+
+void player_heal(Player* p, float hp)
+{
+    if(!p->active) return;
+    if(p->dead) return;
+
+    p->hp += hp;
+    if(p->hp > p->hp_max)
+    {
+        p->hp = p->hp_max;
     }
 }
 
@@ -502,7 +547,14 @@ void player_draw(Player* p)
         p->settings.sprite_index = 0;
     }
 
-    gfx_draw_image_color_mask(player_image, p->settings.sprite_index, p->pos.x, p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
+    if(p->invincible)
+    {
+        gfx_draw_image(player_image, p->settings.sprite_index, p->pos.x, p->pos.y, 0x00FFD700, 1.0, p->angle_deg, 1.0, false, true);
+    }
+    else
+    {
+        gfx_draw_image_color_mask(player_image, p->settings.sprite_index, p->pos.x, p->pos.y, p->settings.color, 1.0, p->angle_deg, 1.0, false, true);
+    }
 
     if(p->force_field)
     {

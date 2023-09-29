@@ -36,6 +36,7 @@ typedef struct
 {
     bool active;
     bool ai;
+    bool invincible;
 
     uint8_t id;
 
@@ -96,6 +97,7 @@ void player_update_hit_box(Player* p);
 void player_draw(Player* p);
 void player_determine_winner();
 void player_hurt(Player* p, float damage);
+void player_heal(Player* p, float hp);
 void player_die(Player* p);
 void players_set_ai_state();
 void player_reset(Player* p);
