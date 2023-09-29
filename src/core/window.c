@@ -85,6 +85,7 @@ bool window_init(int _view_width, int _view_height)
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     glfwMaximizeWindow(window); //TEMP
+    glViewport(0.0,0.0,window_width,window_height);
 
     cursor_ibeam = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
 
