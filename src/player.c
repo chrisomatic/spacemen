@@ -16,7 +16,6 @@ Player* player2 = NULL;
 char* player_names[MAX_PLAYERS+1]; // used for name dropdown. +1 for ALL option.
 
 int player_image = -1;
-int player_count = 1;
 
 
 void player_init_local()
@@ -641,16 +640,57 @@ void player_reset(Player* p)
     p->dead = false;
 }
 
-void players_set_ai_state()
+// should be equal to num_players
+int players_get_num_active()
 {
+    int count = 0;
     for(int i = 0; i < MAX_PLAYERS; ++i)
     {
         Player* p = &players[i];
-        if(p == player) continue;
-
-        if(all_ai != p->ai)
-            p->ai = all_ai;
+        if(p->active) count++;
     }
+    return count;
+}
+
+int players_get_num_ai()
+{
+    int count = 0;
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        Player* p = &players[i];
+        if(p->active && p->ai) count++;
+    }
+    return count;
+}
+
+
+int player_names_build(bool include_all, bool only_active)
+{
+    int count = 0;
+
+    // fill out useful player_names array
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        Player* p = &players[i];
+        if(only_active && !p->active) continue;
+
+        if(player_names[count]) free(player_names[count]);
+
+        int namelen  = strlen(p->settings.name);
+        player_names[count] = calloc(namelen+1, sizeof(char));
+        strncpy(player_names[count], p->settings.name, namelen);
+        count++;
+    }
+
+    if(include_all)
+    {
+        if(player_names[count]) free(player_names[count]);
+        player_names[count] = calloc(4, sizeof(char));
+        strncpy(player_names[count],"ALL",3);
+        count++;
+    }
+
+    return count;
 }
 
 void player_handle_net_inputs(Player* p, double delta_t)

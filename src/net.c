@@ -1373,6 +1373,8 @@ int net_client_connect_recv_data()
     return CONN_RC_NO_DATA;
 }
 
+
+
 void net_client_update()
 {
     bool data_waiting = net_client_data_waiting(); // non-blocking
@@ -1395,7 +1397,7 @@ void net_client_update()
 
                     uint8_t gs = unpack_u8(&srvpkt, &offset);
 
-                    uint8_t num_players = unpack_u8(&srvpkt, &offset);
+                    num_players = unpack_u8(&srvpkt, &offset);
                     client.player_count = num_players;
 
                     for(int i = 0; i < MAX_CLIENTS; ++i)
@@ -1477,7 +1479,6 @@ void net_client_update()
                     }
 
                     client.player_count = num_players;
-                    player_count = num_players;
 
                     if(gs >= 0 && gs < GAME_STATUS_MAX)
                     {
@@ -1533,27 +1534,7 @@ void net_client_update()
 
                     }
 
-                    // fill out useful player_names array
-                    for(int i = 0; i < num_players+1; ++i)
-                    {
-                        if(player_names[i])
-                            free(player_names[i]);
-
-                        if(i == num_players)
-                        {
-                            player_names[i] = calloc(4, sizeof(char));
-                            strncpy(player_names[num_players],"ALL",3);
-                        }
-                        else
-                        {
-                            Player* p = &players[i];
-
-                            int namelen  = strlen(p->settings.name);
-                            player_names[i] = calloc(namelen+1, sizeof(char));
-                            strncpy(player_names[i],p->settings.name,namelen);
-                        }
-                    }
-
+                    player_names_build(true, true);
                 } break;
 
                 case PACKET_TYPE_PING:

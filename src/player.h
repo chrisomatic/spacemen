@@ -80,8 +80,7 @@ typedef struct
 
 extern Player players[MAX_PLAYERS];
 extern Player* player;
-extern Player* player2;
-extern int player_count;
+extern Player* player2; // local game play
 extern int player_image;
 extern char* player_names[MAX_PLAYERS+1];
 
@@ -99,8 +98,13 @@ void player_determine_winner();
 void player_hurt(Player* p, float damage);
 void player_heal(Player* p, float hp);
 void player_die(Player* p);
-void players_set_ai_state();
 void player_reset(Player* p);
+
+int players_get_num_active();
+int players_get_num_ai();
+
+void players_set_ai_state();
+int player_names_build(bool include_all, bool only_active);
 
 // networking
 void player_handle_net_inputs(Player* p, double delta_t);

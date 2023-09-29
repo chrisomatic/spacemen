@@ -97,105 +97,125 @@ void editor_draw()
             {
                 GFXImage* img = &gfx_images[player_image];
 
-                if(imgui_button("Hurt Self"))
-                {
-                    player_hurt(player,player->hp_max/2.0);
-                }
-
                 imgui_toggle_button(&can_target_player, "Can Target Player");
-                static bool _all_active = false;
-                _all_active = all_active;
-                imgui_toggle_button(&all_active, "Toggle All Active");
-                imgui_toggle_button(&all_ai, "Toggle All AI");
 
-                if(all_active != _all_active)
+                uint8_t num_players_prior = num_players;
+
+                player_selection = imgui_dropdown(player_names, MAX_PLAYERS+1, "Select Player", &player_selection);
+
+                bool all_selected = (player_selection == MAX_PLAYERS);
+                bool self_selected = false;
+                if(!all_selected)
+                    self_selected = (&players[player_selection] == player);
+
+
+                bool hurt = imgui_button("Hurt");
+                bool reset_pos = imgui_button("Reset Position");
+
+                if(all_selected)
                 {
+
+                    bool active = (num_players == MAX_PLAYERS);
+                    bool _active = active;
+                    imgui_toggle_button(&_active, "Toggle Active");
+                    if(_active != active)
+                    {
+                        for(int i = 0; i < MAX_PLAYERS; ++i)
+                        {
+                            Player* p = &players[i];
+                            if(p == player) continue;
+                            p->active = _active;
+                        }
+                    }
+
+                    bool ai = ((num_players-1) == players_get_num_ai());
+                    bool _ai = ai;
+                    imgui_toggle_button(&_ai, "Toggle AI");
+                    if(_ai != ai)
+                    {
+                        for(int i = 0; i < MAX_PLAYERS; ++i)
+                        {
+                            Player* p = &players[i];
+                            if(p == player) continue;
+                            p->ai = _ai;
+                        }
+                    }
+
                     for(int i = 0; i < MAX_PLAYERS; ++i)
                     {
                         Player* p = &players[i];
-                        if(p == player) continue;
-                        p->active = all_active;
-                    }
-                }
-                players_set_ai_state();
+                        if(hurt)
+                            player_hurt(p, p->hp_max/4.0);
 
-
-                char* nums[] = ASCII_NUMS;
-                player_selection = imgui_dropdown(nums, MAX_PLAYERS, "Select Player", &player_selection);
-
-                Player* p = &players[player_selection];
-                bool is_self = (p == player);
-
-                imgui_text("Position: %.1f, %.1f", p->pos.x, p->pos.y);
-
-                imgui_text("Angle: %.2f", p->angle_deg);
-
-
-                // float a1 = p->angle_deg;
-                // float a2 = a1 + 2.0;
-                // float dif = calc_angle_dif(a1, a2);
-                // float t = 1.0/3.0;
-                // float a = a1 + dif*RANGE(t,0.0,1.0);
-                // a = normalize_angle_deg(a);
-                // imgui_text("LERP Angle: %.2f -> %.2f (%.2f)   %.2f ", a1, a2, dif, a);
-
-                // float dif = calc_angle_dif(p->angle_deg, 10.0);
-                // // float a = normalize_angle_deg(a);
-                // imgui_text("Angle Dif: %.2f", dif);
-
-
-                if(imgui_button("Reset Position"))
-                {
-                    p->pos.x = view_width/2.0;
-                    p->pos.y = view_height/2.0;
-                    p->vel.x = 0;
-                    p->vel.y = 0;
-                }
-
-                if(!is_self) imgui_toggle_button(&p->active, "Toggle Active");
-                if(!is_self) imgui_toggle_button(&p->ai, "Toggle AI");
-
-                imgui_color_picker("Color", &p->settings.color);
-                imgui_text_box("Name", p->settings.name, PLAYER_NAME_MAX);
-                imgui_number_box("Sprite Index", 0, img->element_count-1, (int*)&p->settings.sprite_index);
-
-                if(!is_self)
-                {
-                    if(imgui_button("Take Control"))
-                    {
-                        if(p != player2)
+                        if(p->active && reset_pos)
                         {
-                            player2 = p;
-                            player_set_controls();
+                            p->pos.x = view_width/2.0;
+                            p->pos.y = view_height/2.0;
+                            p->vel.x = 0;
+                            p->vel.y = 0;
                         }
                     }
-                }
 
-                if(is_self)
+                }
+                else
                 {
-                    if(imgui_button("Save"))
+
+                    Player* p = &players[player_selection];
+
+                    if(!self_selected)
                     {
-                        memcpy(&menu_settings, &p->settings, sizeof(menu_settings));
-                        settings_save();
+                        imgui_toggle_button(&p->active, "Toggle Active");
+                        imgui_toggle_button(&p->ai, "Toggle AI");
+                        if(imgui_button("Take Control"))
+                        {
+                            if(p != player2)
+                            {
+                                player2 = p;
+                                player_set_controls();
+                            }
+                        }
+                    }
+
+                    imgui_color_picker("Color", &p->settings.color);
+                    imgui_text_box("Name", p->settings.name, PLAYER_NAME_MAX);
+                    imgui_number_box("Sprite Index", 0, img->element_count-1, (int*)&p->settings.sprite_index);
+
+                    if(self_selected)
+                    {
+                        if(imgui_button("Save"))
+                        {
+                            memcpy(&menu_settings, &p->settings, sizeof(menu_settings));
+                            settings_save();
+                        }
+                    }
+
+                    imgui_text("Position: %.1f, %.1f", p->pos.x, p->pos.y);
+                    imgui_text("Angle: %.2f", p->angle_deg);
+
+
+                    if(hurt)
+                        player_hurt(p, p->hp_max/4.0);
+
+                    if(reset_pos)
+                    {
+                        p->pos.x = view_width/2.0;
+                        p->pos.y = view_height/2.0;
+                        p->vel.x = 0;
+                        p->vel.y = 0;
                     }
                 }
 
-                int _num_players = 0;
-                for(int i = 0; i < MAX_PLAYERS; ++i)
-                {
-                    if(players[i].active) _num_players++;
-                }
-                num_players = _num_players;
-
-                // player_determine_winner();
+                num_players = (uint8_t)players_get_num_active();
 
             } break;
+
             case 1: // projectiles
             {
                 imgui_slider_float("Damage", 1.0,100.0,&projectile_lookup[0].damage);
                 imgui_slider_float("Base Speed", 200.0,1000.0,&projectile_lookup[0].base_speed);
                 imgui_slider_float("Min Speed", 50.0,200.0,&projectile_lookup[0].min_speed);
             } break;
+
             case 2: // particles
             {
                 ParticleEffect* effect = &particle_spawner->effect;

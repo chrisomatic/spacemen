@@ -49,8 +49,6 @@ ParticleEffect mouse_click_effect = {0};
 
 // local game vars
 bool can_target_player = false;
-bool all_active = false;
-bool all_ai = false;
 
 
 // mouse
@@ -617,6 +615,7 @@ void run_game_start()
     if(is_client)
     {
         net_client_init();
+        num_players = 1;
     }
     else
     {
@@ -624,7 +623,9 @@ void run_game_start()
         player = &players[0];
         memcpy(&player->settings, &menu_settings, sizeof(Settings));
         player_init_local();
-        players_set_ai_state();
+        num_players = 2;
+        player_names_build(true, false);
+        // players_set_ai_state();
     }
 
     run_loop(SCREEN_GAME_START, update_game_start, draw_game_start);
@@ -643,7 +644,7 @@ void update_game_start(float _dt, bool is_client)
     if(!is_client && initiate_game)
     {
         game_status = GAME_STATUS_RUNNING;
-        players_set_ai_state();
+        // players_set_ai_state();
         screen = SCREEN_GAME;
         return;
     }
@@ -750,14 +751,14 @@ void draw_game_start(bool is_client)
 
                 //char* opts[] = {"0","1","2","3","4","5","6","7","ALL"};
                 static int to_sel = 0;
-                to_sel = imgui_dropdown(player_names, player_count+1, "Select Player", &to_sel);
+                to_sel = imgui_dropdown(player_names, num_players+1, "Select Player", &to_sel);
                 imgui_text("Message:");
                 static char msg[255+1] = {0};
                 imgui_text_box("##Messagebox", msg, 255);
 
                 if(imgui_button("Send"))
                 {
-                    int _to = to_sel >= player_count ? TO_ALL : to_sel;
+                    int _to = to_sel >= num_players ? TO_ALL : to_sel;
                     net_client_send_message(_to, "%s", msg);
                 }
             imgui_end();
@@ -798,7 +799,17 @@ void draw_game_start(bool is_client)
         imgui_begin_panel("Settings", x,y, false);
             imgui_number_box("Lives", 1, 10, &num_lives);
             imgui_number_box("Players", 2, MAX_PLAYERS, &num_players);
+            static bool all_ai = false;
             imgui_toggle_button(&all_ai, "Toggle All AI");
+            if(all_ai)
+            {
+                for(int i = 0; i < MAX_PLAYERS; ++i)
+                {
+                    Player* p = &players[i];
+                    if(p == player) continue;
+                    p->ai = all_ai;
+                }
+            }
             bool start = imgui_button("Start");
         imgui_end();
 
