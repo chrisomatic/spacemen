@@ -49,6 +49,7 @@ ParticleEffect mouse_click_effect = {0};
 
 // local game vars
 bool can_target_player = false;
+bool easy_movement = false;
 
 
 // mouse
@@ -319,6 +320,7 @@ void init_server()
     gfx_image_init();
     players_init();
     projectile_init();
+    powerups_init();
 }
 
 void deinit()

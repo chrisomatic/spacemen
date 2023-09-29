@@ -98,6 +98,7 @@ void editor_draw()
                 GFXImage* img = &gfx_images[player_image];
 
                 imgui_toggle_button(&can_target_player, "Can Target Player");
+                imgui_toggle_button(&easy_movement, "Easy Movement");
 
                 uint8_t num_players_prior = num_players;
 

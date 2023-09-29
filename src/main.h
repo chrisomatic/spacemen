@@ -60,7 +60,7 @@ typedef enum
 
 #define FREE(p) do{ if(p != NULL) {free(p); p = NULL;} }while(0)
 
-#define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
+#define DEBUG()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
 
 extern text_list_t* text_lst;
 
@@ -85,6 +85,7 @@ extern Rect ready_zone;
 extern Settings menu_settings;
 
 extern bool can_target_player;
+extern bool easy_movement;
 
 bool is_in_world(Rect* r);
 Vector2f limit_rect_pos(Rect* limit, Rect* rect);

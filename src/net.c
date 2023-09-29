@@ -19,7 +19,14 @@
 #include "projectile.h"
 
 //#define SERVER_PRINT_SIMPLE 1
-//#define SERVER_PRINT_VERBOSE 1
+#define SERVER_PRINT_VERBOSE 0
+
+
+#if SERVER_PRINT_VERBOSE
+    #define LOGNV(format, ...) LOGN(format, ##__VA_ARGS__)
+#else
+    #define LOGNV(format, ...) 0
+#endif
 
 #define GAME_ID 0xC68BB822
 #define PORT 27001
@@ -364,6 +371,8 @@ static void server_send(PacketType type, ClientInfo* cli)
         .hdr.type = type
     };
 
+    LOGNV("%s() : %s", __func__, packet_type_to_str(type));
+
     switch(type)
     {
         case PACKET_TYPE_INIT:
@@ -471,10 +480,10 @@ static void server_send(PacketType type, ClientInfo* cli)
                     pack_u32(&pkt, players[i].settings.color);
                     pack_string(&pkt, players[i].settings.name, PLAYER_NAME_MAX);
 
-                    // LOGN("Sending Settings, Client ID: %d", i);
-                    // LOGN("  color: 0x%08x", players[i].settings.color);
-                    // LOGN("  sprite index: %u", players[i].settings.sprite_index);
-                    // LOGN("  name: %s", players[i].settings.name);
+                    LOGNV("Sending Settings, Client ID: %d", i);
+                    LOGNV("  color: 0x%08x", players[i].settings.color);
+                    LOGNV("  sprite index: %u", players[i].settings.sprite_index);
+                    LOGNV("  name: %s", players[i].settings.name);
 
                     num_clients++;
                 }
@@ -803,6 +812,8 @@ int net_server_start()
                 cli->remote_latest_packet_id = recv_pkt.hdr.id;
                 cli->time_of_latest_packet = timer_get_time();
 
+                LOGNV("%s() : %s", __func__, packet_type_to_str(recv_pkt.hdr.type));
+
                 switch(recv_pkt.hdr.type)
                 {
 
@@ -815,6 +826,7 @@ int net_server_start()
 
                         server_send(PACKET_TYPE_CONNECT_ACCEPTED,cli);
                         server_send(PACKET_TYPE_STATE,cli);
+ 
                     } break;
 
                     case PACKET_TYPE_INPUT:
@@ -840,10 +852,10 @@ int net_server_start()
                         memset(p->settings.name, 0, PLAYER_NAME_MAX);
                         uint8_t namelen = unpack_string(&recv_pkt, p->settings.name, PLAYER_NAME_MAX, &offset);
 
-                        // LOGN("Server Received Settings, Client ID: %d", cli->client_id);
-                        // LOGN("  color: 0x%08x", p->settings.color);
-                        // LOGN("  sprite index: %u", p->settings.sprite_index);
-                        // LOGN("  name (%u): %s", namelen, p->settings.name);
+                        LOGNV("Server Received Settings, Client ID: %d", cli->client_id);
+                        LOGNV("  color: 0x%08x", p->settings.color);
+                        LOGNV("  sprite index: %u", p->settings.sprite_index);
+                        LOGNV("  name (%u): %s", namelen, p->settings.name);
 
                         for(int i = 0; i < MAX_CLIENTS; ++i)
                         {
@@ -1132,6 +1144,8 @@ static void client_send(PacketType type)
     };
 
     memset(pkt.data, 0, MAX_PACKET_DATA_SIZE);
+
+    LOGNV("%s() : %s", __func__, packet_type_to_str(type));
 
     switch(type)
     {
@@ -1475,6 +1489,8 @@ void net_client_update()
                             p->server_state_target.pos.x = pos.x;
                             p->server_state_target.pos.y = pos.y;
                             p->server_state_target.angle = angle;
+
+                            p->player_id = player_id;
                         }
                     }
 

@@ -202,6 +202,8 @@ void player_update(Player* p, double delta_t)
                 if(players[i].id == p->id) continue;
                 if(!can_target_player && &players[i] == player) continue;
 
+                if(p == player2 && &players[i] == player) continue; //player 2 won't target player
+
                 float d = dist(p->pos.x, p->pos.y, players[i].pos.x, players[i].pos.y);
                 if(d < min_d)
                 {
@@ -270,9 +272,10 @@ void player_update(Player* p, double delta_t)
         turn_factor_adj = 0.1;
     }
 
+    float angle = RAD(p->angle_deg);
+
     if(fwd)
     {
-        float angle = RAD(p->angle_deg);
 
         if(fwd)
         {
@@ -300,8 +303,19 @@ void player_update(Player* p, double delta_t)
         p->vel.y *= (55 * delta_t);
     }
 
-    p->pos.x += p->vel.x*delta_t;
-    p->pos.y += p->vel.y*delta_t;
+    if((p == player || p == player2) && easy_movement && fwd)
+    {
+        p->pos.x += delta_t*300.0*cos(angle);
+        p->pos.y -= delta_t*300.0*sin(angle);
+        p->vel.x = 0;
+        p->vel.y = 0;
+    }
+    else
+    {
+        p->pos.x += p->vel.x*delta_t;
+        p->pos.y += p->vel.y*delta_t;
+    }
+
 
     if(left)
     {
