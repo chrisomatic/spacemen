@@ -3,3 +3,4 @@ bin/
 win/x64/
 win/.vs/
 *.settings
+release/
