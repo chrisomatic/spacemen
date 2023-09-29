@@ -60,7 +60,7 @@ void players_init()
     {
         // printf("loading player image\n");
         player_image = gfx_load_image("src/img/spaceship.png", false, false, 32, 32);
-        printf("player_image: %d\n", player_image);
+        // printf("player_image: %d\n", player_image);
     }
 
     GFXImage* img = &gfx_images[player_image];

@@ -61,7 +61,8 @@ Rect world_box = {0};
 Rect ready_zone;
 
 // Settings
-uint32_t background_color = 0x00303030;
+// uint32_t background_color = 0x00303030;
+uint32_t background_color = COLOR_BLACK;
 int menu_selected_option = 0;
 
 Settings menu_settings = {0};
@@ -485,7 +486,10 @@ void draw_home(bool is_client)
     // uint8_t tb = (rand() % 256) * (rand()%2);
     float title_scale = 3.0;
     Vector2f title_size = gfx_string_get_size(title_scale, "SPACEMEN");
-    gfx_draw_string((view_width-title_size.x)/2.0, (view_height-title_size.y)/4.0, colors[ci], title_scale, 0.0, 1.0, true, true, "SPACEMEN");
+    float title_x = (view_width-title_size.x)/2.0;
+    float title_y = (view_height-title_size.y)/4.0;
+    gfx_draw_string(title_x, title_y, colors[ci], title_scale, 0.0, 1.0, true, true, "SPACEMEN");
+
 
     ci++;
     if(ci >= num_steps*2)
