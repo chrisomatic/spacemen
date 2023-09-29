@@ -202,7 +202,7 @@ void player_update(Player* p, double delta_t)
                 if(players[i].id == p->id) continue;
                 if(!can_target_player && &players[i] == player) continue;
 
-                if(p == player2 && &players[i] == player) continue; //player 2 won't target player
+                if(p == player2 && &players[i] == player && num_players > 2) continue; //player 2 won't target player if more than 2 players
 
                 float d = dist(p->pos.x, p->pos.y, players[i].pos.x, players[i].pos.y);
                 if(d < min_d)
@@ -303,7 +303,7 @@ void player_update(Player* p, double delta_t)
         p->vel.y *= (55 * delta_t);
     }
 
-    if((p == player || p == player2) && easy_movement && fwd)
+    if((p == player || (p == player2 && !p->ai)) && easy_movement && fwd)
     {
         p->pos.x += delta_t*300.0*cos(angle);
         p->pos.y -= delta_t*300.0*sin(angle);
