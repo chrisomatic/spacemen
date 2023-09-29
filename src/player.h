@@ -82,6 +82,7 @@ extern Player* player;
 extern Player* player2;
 extern int player_count;
 extern int player_image;
+extern char* player_names[MAX_PLAYERS+1];
 
 void players_init();
 Player* player_get_by_id(uint8_t id);

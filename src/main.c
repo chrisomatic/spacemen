@@ -748,19 +748,17 @@ void draw_game_start(bool is_client)
             // TODO: send messages
             imgui_begin_panel("Message", view_width/2.0,0, false);
 
-                char* opts[] = {"0","1","2","3","4","5","6","7","ALL"};
+                //char* opts[] = {"0","1","2","3","4","5","6","7","ALL"};
                 static int to_sel = 0;
-                to_sel = imgui_dropdown(opts, MAX_PLAYERS+1, "Select Player", &to_sel);
-
+                to_sel = imgui_dropdown(player_names, player_count+1, "Select Player", &to_sel);
                 imgui_text("Message:");
                 static char msg[255+1] = {0};
                 imgui_text_box("##Messagebox", msg, 255);
 
                 if(imgui_button("Send"))
                 {
-                    if(to_sel >= MAX_PLAYERS)
-                        to_sel = TO_ALL;
-                    net_client_send_message(to_sel, "%s", msg);
+                    int _to = to_sel >= player_count ? TO_ALL : to_sel;
+                    net_client_send_message(_to, "%s", msg);
                 }
             imgui_end();
 

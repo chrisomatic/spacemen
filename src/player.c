@@ -12,6 +12,8 @@ Player players[MAX_PLAYERS] = {0};
 Player* player = &players[0];
 Player* player2 = NULL;
 
+char* player_names[MAX_PLAYERS+1]; // used for name dropdown. +1 for ALL option.
+
 int player_image = -1;
 int player_count = 1;
 
