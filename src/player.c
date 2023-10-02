@@ -27,6 +27,7 @@ void player_init_local()
     if(player->jets == NULL)
     {
         player->jets = particles_spawn_effect(player->pos.x,player->pos.y, 0, &particle_effects[EFFECT_JETS],0.0,true,false);
+        player->jets->hidden = true;
     }
 }
 
@@ -341,7 +342,8 @@ void player_update(Player* p, double delta_t)
         player_reset(p);
     }
 
-    if(p == player && role != ROLE_SERVER)
+    // if(p == player && role != ROLE_SERVER)
+    if(role != ROLE_SERVER)
     {
         if(p->jets)
         {
@@ -487,7 +489,7 @@ void player_update_hit_box(Player* p)
 void player_die(Player* p)
 {
     p->deaths += 1;
-    if(p->deaths >= num_lives)
+    if(p->deaths >= game_settings.num_lives)
     {
         p->dead = true;
         printf("%s is dead!\n", p->settings.name);
@@ -587,7 +589,7 @@ void player_draw(Player* p)
     float name_x = p->pos.x - p->hit_box.w/2.0;
     float name_y = p->pos.y + p->hit_box.h/2.0 + 5;
     Vector2f title_size = gfx_string_get_size(name_scale, p->settings.name);
-    gfx_draw_string(name_x, name_y, p->settings.color, name_scale, 0.0, 0.5, true, false, p->settings.name);
+    gfx_draw_string(name_x, name_y, p->settings.color, name_scale, 0.0, 0.5, true, true, p->settings.name);
 
     if(game_debug_enabled)
     {

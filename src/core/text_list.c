@@ -101,7 +101,7 @@ void text_list_draw(text_list_t* lst)
             _x -= _size.x/2.0;
         }
 
-        gfx_draw_string(_x, _y, lst->color, lst->scale, 0.0, opacity, true, true, lst->text[i]);
+        gfx_draw_string(_x, _y, lst->color, lst->scale, 0.0, opacity, true, false, lst->text[i]);
 
         float yadj = (size.y + 1.0);
         _y += lst->downward ? yadj : -yadj;

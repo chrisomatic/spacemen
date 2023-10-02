@@ -140,6 +140,7 @@ static char* packet_type_to_str(PacketType type)
         case PACKET_TYPE_PING: return "PING";
         case PACKET_TYPE_INPUT: return "INPUT";
         case PACKET_TYPE_SETTINGS: return "SETTINGS";
+        case PACKET_TYPE_GAME_SETTINGS: return "GAME SETTINGS";
         case PACKET_TYPE_STATE: return "STATE";
         case PACKET_TYPE_MESSAGE: return "MESSAGE";
         case PACKET_TYPE_ERROR: return "ERROR";
@@ -430,6 +431,9 @@ static void server_send(PacketType type, ClientInfo* cli)
                     pack_float(&pkt,server.clients[i].player_state.energy);
                     pack_float(&pkt,server.clients[i].player_state.hp);
 
+                    pack_u8(&pkt,players[i].deaths);
+                    // pack_u8(&pkt,server.clients[i].player_state.deaths);
+
                     num_clients++;
                 }
             }
@@ -492,7 +496,13 @@ static void server_send(PacketType type, ClientInfo* cli)
             pkt.data[0] = num_clients;
 
             net_send(&server.info, &cli->address, &pkt);
+        } break;
 
+        case PACKET_TYPE_GAME_SETTINGS:
+        {
+            pack_u8(&pkt, game_settings.num_lives);
+
+            net_send(&server.info, &cli->address, &pkt);
         } break;
 
         case PACKET_TYPE_DISCONNECT:
@@ -668,7 +678,9 @@ static void server_update_game_status()
 
                 Player* p = &players[cli->client_id];
 
+                //TODO
                 player_reset(p);
+                p->deaths = 0;
 
                 server_send(PACKET_TYPE_STATE,cli);
             }
@@ -822,10 +834,13 @@ int net_server_start()
                         cli->state = SENDING_CHALLENGE_RESPONSE;
                         players[cli->client_id].active = true;
 
+                        //TODO
                         player_reset(&players[cli->client_id]);
+                        players[cli->client_id].deaths = 0;
 
                         server_send(PACKET_TYPE_CONNECT_ACCEPTED,cli);
                         server_send(PACKET_TYPE_STATE,cli);
+                        server_send(PACKET_TYPE_GAME_SETTINGS,cli);
  
                     } break;
 
@@ -1432,10 +1447,11 @@ void net_client_update()
                             break;
                         }
 
-                        Vector2f pos = unpack_vec2(&srvpkt, &offset);
-                        float angle  = unpack_float(&srvpkt, &offset);
-                        float energy = unpack_float(&srvpkt, &offset);
-                        float hp     = unpack_float(&srvpkt, &offset);
+                        Vector2f pos   = unpack_vec2(&srvpkt, &offset);
+                        float angle    = unpack_float(&srvpkt, &offset);
+                        float energy   = unpack_float(&srvpkt, &offset);
+                        float hp       = unpack_float(&srvpkt, &offset);
+                        uint8_t deaths = unpack_u8(&srvpkt, &offset);
 
                         //LOGN("      Pos: %f, %f. Angle: %f", pos.x, pos.y, angle);
 
@@ -1443,6 +1459,7 @@ void net_client_update()
 
                         p->active = true;
                         p->jets->hidden = false;
+                        p->deaths = deaths;
 
                         p->lerp_t = 0.0;
 
@@ -1551,6 +1568,12 @@ void net_client_update()
                     }
 
                     player_names_build(true, true);
+                } break;
+
+                case PACKET_TYPE_GAME_SETTINGS:
+                {
+                    game_settings.num_lives = unpack_u8(&srvpkt, &offset);
+                    text_list_add(text_lst, 5.0, "# lives set to %u", game_settings.num_lives);
                 } break;
 
                 case PACKET_TYPE_PING:

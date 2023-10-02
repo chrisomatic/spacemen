@@ -41,7 +41,7 @@ typedef struct
     uint8_t id;
 
     bool dead;
-    int deaths;
+    uint8_t deaths;
     float hp;
     float hp_max;
 

@@ -44,6 +44,11 @@ typedef enum
     SCREEN_MAX
 } DisplayScreen;
 
+typedef struct
+{
+    uint8_t num_lives;
+} GameSettings;
+
 #define DEBUG_PROJ_GRIDS    0
 
 #define VIEW_WIDTH   1200
@@ -72,11 +77,13 @@ extern bool back_to_menu;
 extern bool paused;
 extern bool debug_enabled;
 extern bool game_debug_enabled;
-extern int num_lives;
 extern int num_players;
 extern float game_end_counter;
 extern int winner_index;
 extern int client_id;
+
+// extern int num_lives;
+extern GameSettings game_settings;
 
 extern Timer game_timer;
 extern GameRole role;

@@ -17,11 +17,6 @@
 #include "powerups.h"
 #include "text_list.h"
 
-/*
-TODO:
-1) handle disconnection from server
-
-*/
 
 // =========================
 // Global Vars
@@ -37,14 +32,15 @@ bool paused = false;
 bool debug_enabled = false;
 bool game_debug_enabled = false;
 bool initiate_game = false;
-int num_lives = 1;
 int num_players = 2;
 float game_end_counter;
 int winner_index = 0;
 int client_id = -1;
 
+// int num_lives = 1;
+GameSettings game_settings = {0};
+
 ParticleEffect mouse_click_effect = {0};
-// ParticleSpawner* mouse_click_spawner = NULL;
 
 
 // local game vars
@@ -294,6 +290,8 @@ void init()
     settings_load();
     memcpy(&player->settings, &menu_settings, sizeof(Settings));
 
+    game_settings.num_lives = 1;
+
     imgui_load_theme("retro.theme");
 
     stars_init();
@@ -317,6 +315,8 @@ void init_server()
     ready_zone.h = 100;
     ready_zone.x = view_width-200;
     ready_zone.y = view_height-200;
+
+    game_settings.num_lives = 2;
 
     gfx_image_init();
     players_init();
@@ -631,7 +631,6 @@ void run_game_start()
         player_init_local();
         num_players = 2;
         player_names_build(true, false);
-        // players_set_ai_state();
     }
 
     run_loop(SCREEN_GAME_START, update_game_start, draw_game_start);
@@ -650,7 +649,6 @@ void update_game_start(float _dt, bool is_client)
     if(!is_client && initiate_game)
     {
         game_status = GAME_STATUS_RUNNING;
-        // players_set_ai_state();
         screen = SCREEN_GAME;
         return;
     }
@@ -755,7 +753,6 @@ void draw_game_start(bool is_client)
             // TODO: send messages
             imgui_begin_panel("Message", view_width/2.0,0, false);
 
-                //char* opts[] = {"0","1","2","3","4","5","6","7","ALL"};
                 static int to_sel = 0;
                 to_sel = imgui_dropdown(player_names, num_players+1, "Select Player", &to_sel);
                 imgui_text("Message:");
@@ -803,7 +800,7 @@ void draw_game_start(bool is_client)
         int y = (view_height-200)/2.0;
 
         imgui_begin_panel("Settings", x,y, false);
-            imgui_number_box("Lives", 1, 10, &num_lives);
+            imgui_number_box("Lives", 1, 10, (int*)&game_settings.num_lives);
             imgui_number_box("Players", 2, MAX_PLAYERS, &num_players);
             static bool all_ai = false;
             imgui_toggle_button(&all_ai, "Toggle All AI");
@@ -1043,7 +1040,7 @@ void run_game()
         {
             Player* p = &players[i];
             if(p == player) continue;
-            p->active = true;
+            player_set_active_state(i, true);
             // if(p != player2) p->ai = true;
         }
     }
@@ -1340,7 +1337,7 @@ void player_list_draw()
         if(p->active)
         {
             uint32_t color = p->dead ? COLOR_RED : COLOR_WHITE;
-            gfx_draw_string(x, y, color, scale, 0.0, 1.0, true, true, "%d | %s", p->deaths, p->settings.name);
+            gfx_draw_string(x, y, color, scale, 0.0, 1.0, true, false, "%d | %s", p->deaths, p->settings.name);
             y += size.y + 3;
         }
     }

@@ -35,6 +35,7 @@ typedef enum
     PACKET_TYPE_PING,
     PACKET_TYPE_INPUT,
     PACKET_TYPE_SETTINGS,
+    PACKET_TYPE_GAME_SETTINGS,
     PACKET_TYPE_STATE,
     PACKET_TYPE_MESSAGE,
     PACKET_TYPE_ERROR,
@@ -100,6 +101,7 @@ PACK(struct PlayerNetState
     float angle;
     float energy;
     float hp;
+    uint8_t deaths;
     uint8_t sprite_index;
 });
 

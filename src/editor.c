@@ -125,7 +125,8 @@ void editor_draw()
                         {
                             Player* p = &players[i];
                             if(p == player) continue;
-                            p->active = _active;
+                            player_set_active_state(i, _active);
+                            // p->active = _active;
                         }
                     }
 
