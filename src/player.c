@@ -633,12 +633,15 @@ void player_update_positions(Player* p)
     p->hit_box.x = p->pos.x;
     p->hit_box.y = p->pos.y;
 
-    ParticleSpawner* j = get_spawner_by_id(p->jets_id);
-    if(j)
+    if(role != ROLE_SERVER)
     {
-        Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
-        j->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
-        j->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
+        ParticleSpawner* j = get_spawner_by_id(p->jets_id);
+        if(j)
+        {
+            Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
+            j->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
+            j->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
+        }
     }
 }
 
