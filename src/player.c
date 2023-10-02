@@ -94,9 +94,9 @@ void players_init()
         p->vel.x = 0.0;
         p->vel.y = 0.0;
         p->angle_deg = 90.0;
-        p->accel_factor = 10.0;
+        p->accel_factor = 16.0;
         p->turn_rate = 7.0;
-        p->velocity_limit = 1000.0;
+        p->velocity_limit = 500.0;
         p->energy = MAX_ENERGY/2.0;
         p->force_field = false;
         p->invincible = false;
@@ -273,6 +273,12 @@ void player_update(Player* p, double delta_t)
         turn_factor_adj = 0.1;
     }
 
+    // apply "space friction"
+    Vector2f uv = {p->vel.x, p->vel.y};
+    normalize(&uv);
+    p->vel.x -= 5.0*uv.x;
+    p->vel.y -= 5.0*uv.y;
+
     float angle = RAD(p->angle_deg);
 
     if(fwd || bkwd)
@@ -289,22 +295,18 @@ void player_update(Player* p, double delta_t)
             p->vel.y += p->accel_factor*acc_factor_adj*sin(angle);
         }
 
-        float D = p->velocity_limit;
-        float mag = magn(p->vel);
-
-        if(mag > D)
-        {
-            // scale vel back to velocity limit
-            float factor = D / mag;
-
-            p->vel.y *= factor;
-            p->vel.x *= factor;
-        }
     }
-    else
+
+    float D = p->velocity_limit;
+    float mag = magn(p->vel);
+
+    if(mag > D)
     {
-        p->vel.x *= (55 * delta_t);
-        p->vel.y *= (55 * delta_t);
+        // scale vel back to velocity limit
+        float factor = D / mag;
+
+        p->vel.y *= factor;
+        p->vel.x *= factor;
     }
 
     //if(bkwd)
