@@ -166,7 +166,13 @@ void editor_draw()
 
                     if(!self_selected)
                     {
-                        imgui_toggle_button(&p->active, "Toggle Active");
+                        bool active = p->active;
+                        imgui_toggle_button(&active, "Toggle Active");
+                        if(active != p->active)
+                        {
+                            player_set_active_state(player_selection, active);
+                        }
+
                         imgui_toggle_button(&p->ai, "Toggle AI");
                         if(imgui_button("Take Control"))
                         {

@@ -58,6 +58,15 @@ bool settings_load()
             {
                 memset(menu_settings.name,0,PLAYER_NAME_MAX);
                 memcpy(menu_settings.name,value,MIN(PLAYER_NAME_MAX, vindex));
+                printf("vindex: %d\n", vindex);
+
+                if(vindex >= 3)
+                {
+                    if(memcmp(menu_settings.name, "Kam", 3) == 0)
+                    {
+                        sprintf(menu_settings.name, "Kam-%d",rand()%256);
+                    }
+                }
             }
             else if(STR_EQUAL(label, "color"))
             {

@@ -706,9 +706,8 @@ static void server_update_game_status()
 
                 Player* p = &players[cli->client_id];
 
-                //TODO
                 player_reset(p);
-                p->deaths = 0;
+
                 powerups_clear_all();
 
                 server_send(PACKET_TYPE_STATE,cli);
@@ -863,9 +862,7 @@ int net_server_start()
                         cli->state = SENDING_CHALLENGE_RESPONSE;
                         players[cli->client_id].active = true;
 
-                        //TODO
                         player_reset(&players[cli->client_id]);
-                        players[cli->client_id].deaths = 0;
 
                         server_send(PACKET_TYPE_CONNECT_ACCEPTED,cli);
                         server_send(PACKET_TYPE_STATE,cli);
@@ -1487,8 +1484,16 @@ void net_client_update()
                         Player* p = &players[client_id];
 
                         p->active = true;
-                        p->jets->hidden = false;
                         p->deaths = deaths;
+
+                        ParticleSpawner* j = get_spawner_by_id(p->jets_id);
+                        if(j)
+                        {
+                            if(p->deaths >= game_settings.num_lives)
+                                j->hidden = true;
+                            else
+                                j->hidden = false;
+                        }
 
                         p->lerp_t = 0.0;
 

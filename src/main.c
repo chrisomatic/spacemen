@@ -37,7 +37,6 @@ float game_end_counter;
 int winner_index = 0;
 int client_id = -1;
 
-// int num_lives = 1;
 GameSettings game_settings = {0};
 
 ParticleEffect mouse_click_effect = {0};
@@ -63,9 +62,11 @@ int menu_selected_option = 0;
 
 Settings menu_settings = {0};
 
-#define NUM_STARS   1000
-Vector2i stars[NUM_STARS] = {0};
-int stars_size[NUM_STARS] = {0};
+#define NUM_STARS   1500
+#define STARS_SIZE_MIN  0.2
+#define STARS_SIZE_MAX  1.5
+Vector2f stars[NUM_STARS] = {0};
+float stars_size[NUM_STARS] = {0};
 int stars_image = -1;
 
 typedef struct
@@ -335,7 +336,11 @@ void deinit()
 void reset_game()
 {
     projectile_clear_all();
-    players_init();
+
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        player_reset(&players[i]);
+    }
 }
 
 void run_loop(DisplayScreen _screen, loop_update_func _update, loop_draw_func _draw)
@@ -628,7 +633,8 @@ void run_game_start()
         reset_game();
         player = &players[0];
         memcpy(&player->settings, &menu_settings, sizeof(Settings));
-        player_init_local();
+        player_set_controls();
+        // player_init_local();
         num_players = 2;
         player_names_build(true, false);
     }
@@ -692,7 +698,8 @@ void update_game_start(float _dt, bool is_client)
 
                         player = &players[client_id];
                         memcpy(&player->settings, &menu_settings, sizeof(Settings));
-                        player_init_local();
+                        player_set_controls();
+                        // player_init_local();
                         net_client_send_settings();
                     }
                     else
@@ -883,7 +890,11 @@ void draw_game_end(bool is_client)
 
     stars_draw();
 
+    particles_draw_layer(0);
+
     player_draw(&players[winner_index]);
+
+    particles_draw_layer(1);
 
     char text[100] = {0};
     sprintf(text, "%s wins!", players[winner_index].settings.name);
@@ -902,14 +913,6 @@ void draw_game_end(bool is_client)
     ci++;
     if(ci >= num_steps*3)
         ci = 0;
-
-    // players
-    // -----------------------------------------------------------------------
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        Player* p = &players[i];
-        player_draw(p);
-    }
 
     text_list_draw(text_lst);
 }
@@ -1022,16 +1025,9 @@ void simulate_client(double dt)
         if(players[i].active)
         {
             Player* p = &players[i];
-
+            memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
             player_lerp(p, dt);
-            player_update_hit_box(p);
-
-            if(p->jets)
-            {
-                Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
-                p->jets->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
-                p->jets->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
-            }
+            player_update_positions(p);
         }
     }
 
@@ -1048,8 +1044,18 @@ void run_game()
         for(int i = 0; i < num_players; ++i)
         {
             Player* p = &players[i];
-            if(p == player) continue;
+            // if(p == player) continue;
             player_set_active_state(i, true);
+
+            p->pos.x = rand() % view_width;
+            p->pos.y = rand() % view_height;
+            player_update_positions(p);
+
+            ParticleSpawner* jets = get_spawner_by_id(p->jets_id);
+            if(jets)
+            {
+                particles_clear(jets);
+            }
             // if(p != player2) p->ai = true;
         }
     }
@@ -1183,7 +1189,8 @@ void stars_init()
     {
         stars[i].x = rand() % view_width;
         stars[i].y = rand() % view_height;
-        stars_size[i] = (rand() % 3) + 1;
+        // stars_size[i] = (rand() % 6) + 1;
+        stars_size[i] = RAND_FLOAT(STARS_SIZE_MIN,STARS_SIZE_MAX);
     }
 }
 
@@ -1191,12 +1198,13 @@ void stars_update()
 {
     for(int i = 0; i < NUM_STARS; ++i)
     {
-        stars[i].x -= (stars_size[i]);
-        if(stars[i].x <= -5)
+        stars[i].x -= stars_size[i];
+        if(stars[i].x <= -1)
         {
             stars[i].x = view_width;
             stars[i].y = rand() % view_height;
-            stars_size[i] = (rand() % 3) + 1;
+            // stars_size[i] = (rand() % 6) + 1;
+            stars_size[i] = RAND_FLOAT(STARS_SIZE_MIN,STARS_SIZE_MAX);
         }
     }
 }
@@ -1206,6 +1214,7 @@ void stars_draw()
     gfx_sprite_batch_begin(true);
     for(int i = 0; i < NUM_STARS; ++i)
     {
+        // gfx_sprite_batch_add(stars_image, 0, stars[i].x, stars[i].y, COLOR_WHITE, false, stars_size[i], 0.0, 1.0, true, true, false);
         gfx_sprite_batch_add(stars_image, 0, stars[i].x, stars[i].y, COLOR_WHITE, false, stars_size[i], 0.0, 1.0, true, true, false);
     }
     gfx_sprite_batch_draw();

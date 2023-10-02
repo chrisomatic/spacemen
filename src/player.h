@@ -65,7 +65,8 @@ typedef struct
 
     PlayerAction actions[PLAYER_ACTION_MAX];
 
-    ParticleSpawner* jets;
+    // ParticleSpawner* jets;
+    int jets_id;
 
     // networking
     NetPlayerInput input;
@@ -92,12 +93,13 @@ void player_init_local();
 void player_set_controls();
 void player_update(Player* p, double delta_t);
 void player_add_energy(Player* p, float e);
-void player_update_hit_box(Player* p);
 void player_draw(Player* p);
 void player_determine_winner();
 void player_hurt(Player* p, float damage);
 void player_heal(Player* p, float hp);
 void player_die(Player* p);
+void player_update_positions(Player* p);
+void player_respawn(Player* p);
 void player_reset(Player* p);
 
 int players_get_num_active();

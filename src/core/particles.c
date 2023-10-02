@@ -53,7 +53,7 @@ static int get_id()
     return global_id_count++;
 }
 
-static ParticleSpawner* get_spawner_by_id(int id)
+ParticleSpawner* get_spawner_by_id(int id)
 {
     for(int i = 0; i < spawner_list->count; ++i)
     {
@@ -191,6 +191,14 @@ void particles_respawn_effect(ParticleSpawner* spawner, float x, float y, float 
     spawner->life = 0.0;
     spawner->life_max = lifetime;
     spawner->dead = false;
+}
+
+void particles_clear(ParticleSpawner* spawner)
+{
+    for(int j = spawner->particle_list->count-1; j >= 0; --j)
+    {
+        delete_particle(spawner,j);
+    }
 }
 
 

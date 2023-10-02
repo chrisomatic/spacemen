@@ -84,7 +84,9 @@ extern glist* spawner_list;
 
 void particles_init();
 ParticleSpawner* particles_spawn_effect(float x, float y, int z, ParticleEffect* effect, float lifetime, bool in_world, bool hidden);
+ParticleSpawner* get_spawner_by_id(int id);
 void particles_respawn_effect(ParticleSpawner* spawner, float x, float y, float lifetime, bool in_world, bool hidden);
+void particles_clear(ParticleSpawner* spawner);
 void particles_update(double delta_t);
 void particles_show_spawner(int id, bool show);
 void particles_draw();

@@ -18,18 +18,6 @@ char* player_names[MAX_PLAYERS+1]; // used for name dropdown. +1 for ALL option.
 int player_image = -1;
 
 
-void player_init_local()
-{
-    player_set_controls();
-
-    player->active = true;
-
-    if(player->jets == NULL)
-    {
-        player->jets = particles_spawn_effect(player->pos.x,player->pos.y, 0, &particle_effects[EFFECT_JETS],0.0,true,false);
-        player->jets->hidden = true;
-    }
-}
 
 void player_set_controls()
 {
@@ -57,12 +45,10 @@ void player_set_controls()
 
 void players_init()
 {
-    if(player_image == -1)
-    {
-        // printf("loading player image\n");
-        player_image = gfx_load_image("src/img/spaceship.png", false, false, 32, 32);
-        // printf("player_image: %d\n", player_image);
-    }
+    if(player_image != -1)
+        return;
+
+    player_image = gfx_load_image("src/img/spaceship.png", false, false, 32, 32);
 
     GFXImage* img = &gfx_images[player_image];
     float wh = MAX(img->element_width, img->element_height)*0.9;
@@ -86,9 +72,6 @@ void players_init()
         {   p->settings.color = COLOR_RAND2;
             p->pos.x = rand()%view_width;
             p->pos.y = rand()%view_height;
-            // p->pos.x = player->pos.x - 100;
-            // p->pos.y = player->pos.y - 100;
-            // p->ai = true;
         }
 
         p->vel.x = 0.0;
@@ -113,10 +96,10 @@ void players_init()
 
         memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
 
-        if(role != ROLE_SERVER && !p->jets)
+        if(role != ROLE_SERVER)
         {
-            p->jets = particles_spawn_effect(p->pos.x,p->pos.y, 0, &particle_effects[EFFECT_JETS],0.0,true,false);
-            p->jets->hidden = true;
+            ParticleSpawner* j = particles_spawn_effect(p->pos.x,p->pos.y, 0, &particle_effects[EFFECT_JETS],0.0,true,true);
+            p->jets_id = j->id;
         }
     }
 
@@ -138,7 +121,9 @@ void player_set_active_state(uint8_t id, bool active)
     if(p == NULL) return;
 
     p->active = active;
-    p->jets->hidden = !active;
+
+    ParticleSpawner* j = get_spawner_by_id(p->jets_id);
+    if(j) j->hidden = !active;
 }
 
 
@@ -180,6 +165,8 @@ void player_update(Player* p, double delta_t)
     if(paused) return;
 
     if(p->dead) return;
+
+    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
 
     bool fwd   = p->actions[PLAYER_ACTION_FORWARD].state;
     bool bkwd  = p->actions[PLAYER_ACTION_BACKWARD].state;
@@ -309,9 +296,6 @@ void player_update(Player* p, double delta_t)
         p->vel.x *= factor;
     }
 
-    //if(bkwd)
-   // {
-    //}
 
     if((p == player || (p == player2 && !p->ai)) && easy_movement && fwd)
     {
@@ -344,18 +328,7 @@ void player_update(Player* p, double delta_t)
         player_reset(p);
     }
 
-    // if(p == player && role != ROLE_SERVER)
-    if(role != ROLE_SERVER)
-    {
-        if(p->jets)
-        {
-            Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
-            p->jets->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
-            p->jets->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
-        }
-    }
-
-    player_update_hit_box(p);
+    player_update_positions(p);
 
     Vector2f adj = limit_rect_pos(&world_box, &p->hit_box);
 
@@ -401,6 +374,9 @@ void player_update(Player* p, double delta_t)
         }
 
     }
+
+    // memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
+    player_update_positions(p);
 
     float ff_energy = 70.0*delta_t;
     if(p->force_field)
@@ -481,26 +457,22 @@ void player_add_energy(Player* p, float e)
     p->energy = RANGE(p->energy + e, 0.0, MAX_ENERGY);
 }
 
-void player_update_hit_box(Player* p)
-{
-    memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
-    p->hit_box.x = p->pos.x;
-    p->hit_box.y = p->pos.y;
-}
-
 void player_die(Player* p)
 {
     p->deaths += 1;
     if(p->deaths >= game_settings.num_lives)
     {
         p->dead = true;
+        ParticleSpawner* j = get_spawner_by_id(p->jets_id);
+        if(j) j->hidden = true;
+        // else printf("warning: j is NULL\n");
         printf("%s is dead!\n", p->settings.name);
         text_list_add(text_lst, 4.0, "%s is dead", p->settings.name);
         server_send_message(TO_ALL, FROM_SERVER, "%s is dead", p->settings.name);
     }
     else
     {
-        player_reset(p);
+        player_respawn(p);
         text_list_add(text_lst, 3.0, "%s died", p->settings.name);
         server_send_message(TO_ALL, FROM_SERVER, "%s died", p->settings.name);
     }
@@ -656,6 +628,31 @@ void player_draw(Player* p)
     }
 }
 
+void player_update_positions(Player* p)
+{
+    p->hit_box.x = p->pos.x;
+    p->hit_box.y = p->pos.y;
+
+    ParticleSpawner* j = get_spawner_by_id(p->jets_id);
+    if(j)
+    {
+        Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
+        j->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
+        j->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
+    }
+}
+
+void player_respawn(Player* p)
+{
+    //TODO: position
+    p->pos.x = rand()%view_width;
+    p->pos.y = rand()%view_height;
+    p->vel.x = 0.0;
+    p->vel.y = 0.0;
+    p->energy = MAX_ENERGY;
+    p->hp = p->hp_max;
+}
+
 void player_reset(Player* p)
 {
     p->pos.x = VIEW_WIDTH/2.0;
@@ -665,6 +662,7 @@ void player_reset(Player* p)
     p->energy = MAX_ENERGY;
     p->hp = p->hp_max;
     p->dead = false;
+    p->deaths = 0;
 }
 
 // should be equal to num_players
