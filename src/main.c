@@ -751,19 +751,28 @@ void draw_game_start(bool is_client)
         {
 
             // TODO: send messages
-            imgui_begin_panel("Message", view_width/2.0,0, false);
+            imgui_begin("Lobby", (view_width - 500)/2.0,10);
 
+            imgui_horizontal_begin();
+                imgui_text("To:");
                 static int to_sel = 0;
-                to_sel = imgui_dropdown(player_names, num_players+1, "Select Player", &to_sel);
-                imgui_text("Message:");
+                to_sel = imgui_dropdown(player_names, num_players+1, "##Select Player", &to_sel);
+                //imgui_text("Message:");
                 static char msg[255+1] = {0};
-                imgui_text_box("##Messagebox", msg, 255);
+                imgui_text("Msg:");
+                imgui_text_box_sized("##Messagebox", msg, 255, 200, 20);
+
+                if(imgui_button("Clear"))
+                {
+                    memset(msg,0, 255*sizeof(char));
+                }
 
                 if(imgui_button("Send"))
                 {
                     int _to = to_sel >= num_players ? TO_ALL : to_sel;
                     net_client_send_message(_to, "%s", msg);
                 }
+                imgui_horizontal_end();
             imgui_end();
 
             gfx_draw_rect(&ready_zone, COLOR_GREEN, 0.0, 1.0, 1.0, false, true);

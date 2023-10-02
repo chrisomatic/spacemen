@@ -701,19 +701,19 @@ int player_names_build(bool include_all, bool only_active)
         Player* p = &players[i];
         if(only_active && !p->active) continue;
 
-        if(player_names[count]) free(player_names[count]);
+        if(player_names[count+1]) free(player_names[count+1]);
 
         int namelen  = strlen(p->settings.name);
-        player_names[count] = calloc(namelen+1, sizeof(char));
-        strncpy(player_names[count], p->settings.name, namelen);
+        player_names[count+1] = calloc(namelen+1, sizeof(char));
+        strncpy(player_names[count+1], p->settings.name, namelen);
         count++;
     }
 
     if(include_all)
     {
-        if(player_names[count]) free(player_names[count]);
-        player_names[count] = calloc(4, sizeof(char));
-        strncpy(player_names[count],"ALL",3);
+        if(player_names[0]) free(player_names[0]);
+        player_names[0] = calloc(4, sizeof(char));
+        strncpy(player_names[0],"ALL",3);
         count++;
     }
 

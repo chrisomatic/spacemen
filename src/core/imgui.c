@@ -990,6 +990,21 @@ void imgui_text_box(char* label, char* buf, int bufsize)
     progress_pos();
 }
 
+void imgui_text_box_sized(char* label, char* buf, int bufsize, int width, int height)
+{
+    int width_prior = theme.text_box_width;
+    int height_prior = theme.text_box_height;
+
+    theme.text_box_width = width;
+    theme.text_box_height = height;
+
+    imgui_text_box(label, buf, bufsize);
+
+    theme.text_box_width = width_prior;
+    theme.text_box_height = height_prior;
+
+}
+
 void imgui_reset_cursor_blink()
 {
     ImGuiContext* active_ctx = get_active_textbox_context();

@@ -22,6 +22,7 @@ void imgui_slider_float(char* label, float min, float max, float* result);
 Vector2f imgui_number_box(char* label, int min, int max, int* result);
 Vector2f imgui_number_box_formatted(char* label, int min, int max, char* format, int* result);
 void imgui_text_box(char* label, char* buf, int bufsize);
+void imgui_text_box_sized(char* label, char* buf, int bufsize, int width, int height);
 int imgui_button_select(int num_buttons, char* button_labels[], char* label);
 int imgui_dropdown(char* options[], int num_options, char* label, int* selected_index);
 void imgui_tooltip(char* tooltip, ...);

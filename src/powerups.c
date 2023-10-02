@@ -4,7 +4,8 @@
 #include "main.h"
 #include "powerups.h"
 
-static Powerup powerups[MAX_POWERUPS] = {0};
+Powerup powerups[MAX_POWERUPS] = {0};
+
 static int powerups_img = -1;
 
 static glist* powerup_list = NULL;
@@ -60,9 +61,14 @@ Powerup* powerups_get_list()
     return powerups;
 }
 
-int powerups_get_count()
+void powerups_clear_all()
 {
-    return powerup_list->count;
+    list_clear(powerup_list);
+}
+
+uint8_t powerups_get_count()
+{
+    return (uint8_t)powerup_list->count;
 }
 
 void powerups_init()

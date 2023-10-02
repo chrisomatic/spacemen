@@ -17,6 +17,7 @@
 #include "player.h"
 #include "settings.h"
 #include "projectile.h"
+#include "powerups.h"
 
 //#define SERVER_PRINT_SIMPLE 1
 #define SERVER_PRINT_VERBOSE 0
@@ -421,6 +422,7 @@ static void server_send(PacketType type, ClientInfo* cli)
 
             int num_clients = 0;
 
+            //players
             for(int i = 0; i < MAX_CLIENTS; ++i)
             {
                 if(server.clients[i].state == CONNECTED)
@@ -440,6 +442,7 @@ static void server_send(PacketType type, ClientInfo* cli)
 
             pkt.data[1] = num_clients;
 
+            // projectiles
             // if(plist->count > 0)
             {
                 pack_u8(&pkt,(uint8_t)plist->count);
@@ -452,6 +455,27 @@ static void server_send(PacketType type, ClientInfo* cli)
                 pack_float(&pkt,projectiles[i].angle_deg);
                 pack_u8(&pkt,projectiles[i].player_id);
             }
+
+            // powerups
+            uint8_t num_powerups = powerups_get_count();
+            uint8_t num_active_powerups = 0;
+
+            int tindex = pkt.data_len;
+            pkt.data_len++;
+
+            for(int i = 0; i < num_powerups; ++i)
+            {
+                Powerup* pup = &powerups[i];
+                if(pup->picked_up)
+                    continue;
+
+                num_active_powerups++;
+
+                pack_u8(&pkt, (uint8_t)pup->type);
+                pack_vec2(&pkt, pup->pos);
+            }
+
+            pkt.data[tindex] = num_active_powerups;
 
             //print_packet(&pkt);
 
@@ -521,6 +545,11 @@ static void server_send(PacketType type, ClientInfo* cli)
 
 static void server_update_players()
 {
+    projectile_update(1.0/TARGET_FPS);
+
+    if(game_status == GAME_STATUS_RUNNING)
+        powerups_update(1.0/TARGET_FPS);
+
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
         ClientInfo* cli = &server.clients[i];
@@ -530,8 +559,6 @@ static void server_update_players()
         Player* p = &players[cli->client_id];
 
         //printf("Applying inputs to player. input count: %d\n", cli->input_count);
-
-        projectile_update(1.0/TARGET_FPS);
 
         if(cli->input_count == 0)
         {
@@ -554,14 +581,15 @@ static void server_update_players()
             cli->input_count = 0;
         }
 
-        projectile_handle_collisions(1.0/TARGET_FPS);
-
         cli->player_state.pos.x = p->pos.x;
         cli->player_state.pos.y = p->pos.y;
         cli->player_state.angle = p->angle_deg;
         cli->player_state.energy = p->energy;
         cli->player_state.hp = p->hp;
     }
+
+    projectile_handle_collisions(1.0/TARGET_FPS);
+
 }
 
 static void update_game_status(GameStatus _game_status)
@@ -681,6 +709,7 @@ static void server_update_game_status()
                 //TODO
                 player_reset(p);
                 p->deaths = 0;
+                powerups_clear_all();
 
                 server_send(PACKET_TYPE_STATE,cli);
             }
@@ -1508,6 +1537,21 @@ void net_client_update()
                             p->server_state_target.angle = angle;
 
                             p->player_id = player_id;
+                        }
+                    }
+
+                    // powerups
+                    {
+                        powerups_clear_all();
+
+                        uint8_t num_active_powerups = unpack_u8(&srvpkt,&offset);
+
+                        for(int i = 0; i < num_active_powerups; ++i)
+                        {
+                            uint8_t type = (PowerupType)unpack_u8(&srvpkt, &offset);
+                            Vector2f pos = unpack_vec2(&srvpkt, &offset);
+
+                            powerups_add(pos.x, pos.y, type);
                         }
                     }
 

@@ -31,9 +31,12 @@ typedef struct
     Player* picked_up_player;
 } Powerup;
 
+extern Powerup powerups[MAX_POWERUPS];
+
 void powerups_init();
 void powerups_add(float x, float y, PowerupType type);
 void powerups_update(double dt);
 void powerups_draw();
 Powerup* powerups_get_list();
-int powerups_get_count();
+uint8_t powerups_get_count();
+void powerups_clear_all();
