@@ -234,6 +234,9 @@ void player_update(Player* p, double delta_t)
                             p->actions[PLAYER_ACTION_SHOOT].state = true;
                     }
                 }
+                else
+                    p->actions[PLAYER_ACTION_SHOOT].state = false;
+
 
                 if(rand()%3 == 0)
                     fwd = true;
