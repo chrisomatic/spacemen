@@ -391,6 +391,7 @@ bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
     return are_line_segs_intersecting_rect(segs, 5, check);
 }
 
+// for centered rectangles
 bool rectangles_colliding(Rect* a, Rect* b)
 {
     int x1 = a->x-(a->w/2.0);
@@ -418,6 +419,8 @@ bool rectangles_colliding(Rect* a, Rect* b)
     return true;
 }
 
+
+// for top left rectangles
 bool rectangles_colliding2(Rect* a, Rect* b)
 {
     int x1 = a->x;
