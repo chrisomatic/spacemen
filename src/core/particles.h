@@ -92,8 +92,6 @@ void particles_show_spawner(int id, bool show);
 void particles_draw();
 void particles_draw_layer(int z);
 void particles_draw_spawner(ParticleSpawner* spawner, bool ignore_light, bool add_to_existing_batch);
-ParticleSpawner* particles_get_spawner(int id);
-//bool particles_is_spawner_in_camera_view(ParticleSpawner* s);
 
 void print_particle(Particle* p);
 void print_particle_effect(ParticleEffect* e);

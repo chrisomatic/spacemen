@@ -322,6 +322,7 @@ void init_server()
     gfx_image_init();
     players_init();
     projectile_init();
+    particles_init();
     powerups_init();
 }
 

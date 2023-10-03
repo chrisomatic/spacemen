@@ -55,6 +55,8 @@ static int get_id()
 
 ParticleSpawner* get_spawner_by_id(int id)
 {
+    if(spawner_list == NULL) return NULL;
+
     for(int i = 0; i < spawner_list->count; ++i)
     {
         if(spawners[i].id == id)
@@ -117,16 +119,6 @@ void particles_show_spawner(int id, bool show)
     if(spawner)
     {
         spawner->hidden = !show;
-    }
-}
-
-ParticleSpawner* particles_get_spawner(int id)
-{
-    ParticleSpawner* spawner = get_spawner_by_id(id);
-
-    if(spawner)
-    {
-        return spawner;
     }
 }
 
@@ -204,6 +196,8 @@ void particles_clear(ParticleSpawner* spawner)
 
 void particles_update(double delta_t)
 {
+    if(spawner_list == NULL) return;
+
     for(int i = spawner_list->count-1; i >= 0; --i)
     {
         ParticleSpawner* spawner = &spawners[i];
@@ -339,6 +333,8 @@ bool particles_is_spawner_in_camera_view(ParticleSpawner* s)
 
 void particles_draw()
 {
+    if(spawner_list == NULL) return;
+
     for(int i = 0; i < spawner_list->count; ++i)
     {
         ParticleSpawner* spawner = &spawners[i];
@@ -352,6 +348,8 @@ void particles_draw()
 
 void particles_draw_layer(int z)
 {
+    if(spawner_list == NULL) return;
+
     for(int i = 0; i < spawner_list->count; ++i)
     {
         ParticleSpawner* spawner = &spawners[i];
