@@ -5,7 +5,7 @@
 #define TICK_RATE 20.0f
 
 #define MAX_CLIENTS     MAX_PLAYERS
-#define MAX_PACKET_DATA_SIZE 1024
+#define MAX_PACKET_DATA_SIZE 32768
 
 #define FROM_SERVER 0xFF    //for messaging
 #define TO_ALL      0xFF    //for messaging
