@@ -58,7 +58,6 @@ bool settings_load()
             {
                 memset(menu_settings.name,0,PLAYER_NAME_MAX);
                 memcpy(menu_settings.name,value,MIN(PLAYER_NAME_MAX, vindex));
-                printf("vindex: %d\n", vindex);
 
                 if(vindex >= 3)
                 {

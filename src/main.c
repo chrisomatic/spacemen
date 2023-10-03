@@ -1023,12 +1023,29 @@ void simulate_client(double dt)
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
-        if(players[i].active)
+        Player* p = &players[i];
+        if(p->active)
         {
-            Player* p = &players[i];
             memcpy(&p->hit_box_prior, &p->hit_box, sizeof(Rect));
             player_lerp(p, dt);
             player_update_positions(p);
+            // if(p->dead)
+            // {
+            //     ParticleSpawner* jets = get_spawner_by_id(p->jets_id);
+            //     if(jets)
+            //     {
+            //         printf("simulate_client(): hiding jets for %d\n", p->id);
+            //         jets->hidden = true;
+            //     }
+            // }
+        }
+        else
+        {
+            ParticleSpawner* jets = get_spawner_by_id(p->jets_id);
+            if(jets)
+            {
+                jets->hidden = true;
+            }
         }
     }
 

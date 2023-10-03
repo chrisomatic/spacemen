@@ -104,10 +104,15 @@ void editor_draw()
 
                 player_selection = imgui_dropdown(player_names, MAX_PLAYERS+1, "Select Player", &player_selection);
 
-                bool all_selected = (player_selection == MAX_PLAYERS);
+                // bool all_selected = (player_selection == MAX_PLAYERS);
+                bool all_selected = (player_selection == 0);
                 bool self_selected = false;
+
+                int player_index = player_selection-1;
                 if(!all_selected)
-                    self_selected = (&players[player_selection] == player);
+                {
+                    self_selected = (&players[player_index] == player);
+                }
 
 
                 bool hurt = imgui_button("Hurt");
@@ -165,7 +170,7 @@ void editor_draw()
                 else
                 {
 
-                    Player* p = &players[player_selection];
+                    Player* p = &players[player_index];
 
                     if(!self_selected)
                     {
@@ -173,7 +178,7 @@ void editor_draw()
                         imgui_toggle_button(&active, "Toggle Active");
                         if(active != p->active)
                         {
-                            player_set_active_state(player_selection, active);
+                            player_set_active_state(player_index, active);
                         }
 
                         imgui_toggle_button(&p->ai, "Toggle AI");

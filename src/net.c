@@ -57,7 +57,6 @@ typedef struct
     uint8_t client_salt[8];
     uint8_t server_salt[8];
     uint8_t xor_salts[8];
-    PlayerNetState player_state;
     ConnectionRejectionReason last_reject_reason;
     PacketError last_packet_error;
     Packet prior_state_pkt;
@@ -80,7 +79,6 @@ struct
 
 // ---
 
-//static PlayerNetState net_player_states[MAX_CLIENTS];
 static NetPlayerInput net_player_inputs[INPUT_QUEUE_MAX]; // shared
 static int input_count = 0;
 static int inputs_per_packet = 1.0; //(TARGET_FPS/TICK_RATE);
@@ -332,7 +330,6 @@ static bool server_assign_new_client(Address* addr, ClientInfo** cli)
         {
             *cli = &server.clients[i];
             (*cli)->client_id = i;
-            //reset player state
             return true;
         }
     }
@@ -427,14 +424,14 @@ static void server_send(PacketType type, ClientInfo* cli)
             {
                 if(server.clients[i].state == CONNECTED)
                 {
+                    Player* p = &players[i];
                     pack_u8(&pkt,(uint8_t)i);
-                    pack_vec2(&pkt,server.clients[i].player_state.pos);
-                    pack_float(&pkt,server.clients[i].player_state.angle);
-                    pack_float(&pkt,server.clients[i].player_state.energy);
-                    pack_float(&pkt,server.clients[i].player_state.hp);
 
-                    pack_u8(&pkt,players[i].deaths);
-                    // pack_u8(&pkt,server.clients[i].player_state.deaths);
+                    pack_vec2(&pkt,p->pos);
+                    pack_float(&pkt, p->angle_deg);
+                    pack_float(&pkt,p->energy);
+                    pack_float(&pkt,p->hp);
+                    pack_u8(&pkt,p->deaths);
 
                     num_clients++;
                 }
@@ -581,11 +578,6 @@ static void server_update_players()
             cli->input_count = 0;
         }
 
-        cli->player_state.pos.x = p->pos.x;
-        cli->player_state.pos.y = p->pos.y;
-        cli->player_state.angle = p->angle_deg;
-        cli->player_state.energy = p->energy;
-        cli->player_state.hp = p->hp;
     }
 
     projectile_handle_collisions(1.0/TARGET_FPS);
@@ -705,9 +697,7 @@ static void server_update_game_status()
                     continue;
 
                 Player* p = &players[cli->client_id];
-
                 player_reset(p);
-
                 powerups_clear_all();
 
                 server_send(PACKET_TYPE_STATE,cli);
@@ -862,7 +852,15 @@ int net_server_start()
                         cli->state = SENDING_CHALLENGE_RESPONSE;
                         players[cli->client_id].active = true;
 
-                        player_reset(&players[cli->client_id]);
+                        LOGNV("player_reset()");
+                        Player* p = &players[cli->client_id];
+                        player_reset(p);
+
+                        // face the ready zone
+                        p->angle_deg = 0;
+                        p->pos.x = ready_zone.x - ready_zone.w*2;
+                        p->pos.y = ready_zone.y;
+
 
                         server_send(PACKET_TYPE_CONNECT_ACCEPTED,cli);
                         server_send(PACKET_TYPE_STATE,cli);
@@ -1449,14 +1447,17 @@ void net_client_update()
             {
                 case PACKET_TYPE_STATE:
                 {
-
                     uint8_t gs = unpack_u8(&srvpkt, &offset);
 
                     num_players = unpack_u8(&srvpkt, &offset);
                     client.player_count = num_players;
 
+                    bool prior_active[MAX_CLIENTS] = {0};
                     for(int i = 0; i < MAX_CLIENTS; ++i)
+                    {
+                        prior_active[i] = players[i].active;
                         players[i].active = false;
+                    }
 
                     //LOGN("Received STATE packet. num players: %d", num_players);
 
@@ -1486,13 +1487,16 @@ void net_client_update()
                         p->active = true;
                         p->deaths = deaths;
 
-                        ParticleSpawner* j = get_spawner_by_id(p->jets_id);
-                        if(j)
+                        ParticleSpawner* jets = get_spawner_by_id(p->jets_id);
+                        if(jets)
                         {
                             if(p->deaths >= game_settings.num_lives)
-                                j->hidden = true;
+                            {
+                                // printf("hiding jets for %d\n", p->id);
+                                jets->hidden = true;
+                            }
                             else
-                                j->hidden = false;
+                                jets->hidden = false;
                         }
 
                         p->lerp_t = 0.0;
@@ -1508,6 +1512,14 @@ void net_client_update()
                         p->server_state_target.angle = angle;
                         p->server_state_target.energy = energy;
                         p->server_state_target.hp = hp;
+
+                        if(!prior_active[client_id])
+                        {
+                            // printf("first state packet for %d\n", client_id);
+                            memcpy(&p->server_state_prior, &p->server_state_target, sizeof(p->server_state_target));
+                        }
+                        // printf("[prior]  %.2f, %.2f\n", p->server_state_prior.pos.x, p->server_state_prior.pos.y);
+                        // printf("[target] %.2f, %.2f\n", p->server_state_target.pos.x, p->server_state_target.pos.y);
                     }
 
                     // if(offset < srvpkt.data_len-1)

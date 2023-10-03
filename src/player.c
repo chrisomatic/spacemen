@@ -122,8 +122,8 @@ void player_set_active_state(uint8_t id, bool active)
 
     p->active = active;
 
-    ParticleSpawner* j = get_spawner_by_id(p->jets_id);
-    if(j) j->hidden = !active;
+    ParticleSpawner* jets = get_spawner_by_id(p->jets_id);
+    if(jets) jets->hidden = !active;
 }
 
 
@@ -470,9 +470,9 @@ void player_die(Player* p)
     if(p->deaths >= game_settings.num_lives)
     {
         p->dead = true;
-        ParticleSpawner* j = get_spawner_by_id(p->jets_id);
-        if(j) j->hidden = true;
-        // else printf("warning: j is NULL\n");
+        ParticleSpawner* jets = get_spawner_by_id(p->jets_id);
+        if(jets) jets->hidden = true;
+        // else printf("warning: jets is NULL\n");
         printf("%s is dead!\n", p->settings.name);
         text_list_add(text_lst, 4.0, "%s is dead", p->settings.name);
         server_send_message(TO_ALL, FROM_SERVER, "%s is dead", p->settings.name);
@@ -642,12 +642,12 @@ void player_update_positions(Player* p)
 
     if(role != ROLE_SERVER)
     {
-        ParticleSpawner* j = get_spawner_by_id(p->jets_id);
-        if(j)
+        ParticleSpawner* jets = get_spawner_by_id(p->jets_id);
+        if(jets)
         {
             Rect* r = &gfx_images[player_image].visible_rects[p->settings.sprite_index];
-            j->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
-            j->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
+            jets->pos.x = p->pos.x - 0.5*r->w*cosf(RAD(p->angle_deg));
+            jets->pos.y = p->pos.y + 0.5*r->w*sinf(RAD(p->angle_deg));
         }
     }
 }
@@ -759,6 +759,9 @@ void player_lerp(Player* p, double delta_t)
 
     float tick_time = 1.0/TICK_RATE;
     float t = (p->lerp_t / tick_time);
+
+    // printf("[lerp prior]  %.2f, %.2f\n", p->server_state_prior.pos.x, p->server_state_prior.pos.y);
+    // printf("[lerp target] %.2f, %.2f\n", p->server_state_target.pos.x, p->server_state_target.pos.y);
 
     Vector2f lp = lerp2f(&p->server_state_prior.pos,&p->server_state_target.pos,t);
     p->pos.x = lp.x;
