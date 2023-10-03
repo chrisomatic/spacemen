@@ -476,14 +476,14 @@ void draw_home(bool is_client)
 
     memcpy(&menu_keys_prior, &menu_keys, sizeof(MenuKeys));
 
-    int num_steps = 80;
+    #define NUM_STEPS   150
+    #define NUM_COLORS  3
     static int ci = -1;
-    static uint32_t colors[160] = {0};
-
+    static uint32_t colors[NUM_STEPS*NUM_COLORS] = {0};
     if(ci == -1)
     {
-        uint32_t color_list[2] = {COLOR_WHITE, COLOR_BLUE};
-        gfx_color_gradient(color_list, 2, num_steps, colors);
+        uint32_t color_list[NUM_COLORS] = {COLOR_WHITE, COLOR_BLUE, COLOR_BLACK};
+        gfx_color_gradient(color_list, NUM_COLORS, NUM_STEPS, colors);
         ci = 0;
     }
 
@@ -498,7 +498,7 @@ void draw_home(bool is_client)
 
 
     ci++;
-    if(ci >= num_steps*2)
+    if(ci >= NUM_STEPS*NUM_COLORS)
         ci = 0;
 
     int x = (view_width-200)/2.0;
