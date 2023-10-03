@@ -262,9 +262,10 @@ void player_update(Player* p, double delta_t)
 
     // apply "space friction"
     Vector2f uv = {p->vel.x, p->vel.y};
+    float m = magn(p->vel);
     normalize(&uv);
-    p->vel.x -= 5.0*uv.x;
-    p->vel.y -= 5.0*uv.y;
+    p->vel.x -= 0.05*m*uv.x;
+    p->vel.y -= 0.05*m*uv.y;
 
     float angle = RAD(p->angle_deg);
 
@@ -296,6 +297,9 @@ void player_update(Player* p, double delta_t)
         p->vel.x *= factor;
     }
 
+    // set velocity to zero if it is close enough
+    if(ABS(p->vel.x) < 0.1) p->vel.x = 0.000;
+    if(ABS(p->vel.y) < 0.1) p->vel.y = 0.000;
 
     if((p == player || (p == player2 && !p->ai)) && easy_movement && fwd)
     {

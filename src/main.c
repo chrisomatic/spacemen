@@ -777,7 +777,7 @@ void draw_game_start(bool is_client)
 
                 if(imgui_button("Send"))
                 {
-                    int _to = to_sel >= num_players ? TO_ALL : to_sel;
+                    int _to = to_sel == 0 ? TO_ALL : to_sel;
                     net_client_send_message(_to, "%s", msg);
                 }
                 imgui_horizontal_end();

@@ -198,6 +198,7 @@ void editor_draw()
                     }
 
                     imgui_text("Position: %.1f, %.1f", p->pos.x, p->pos.y);
+                    imgui_text("Velocity: %+3.6f, %+3.6f", p->vel.x, p->vel.y);
                     imgui_text("Angle: %.2f", p->angle_deg);
 
 
