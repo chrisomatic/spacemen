@@ -184,6 +184,12 @@ void projectile_update(float delta_t)
         proj->pos.y += _dt*proj->vel.y;
 
         projectile_update_hit_box(proj);
+
+        if(!rectangles_colliding(&proj->hit_box, &world_box))
+        {
+            proj->dead = true;
+            continue;
+        }
     }
 
     // int count = 0;
