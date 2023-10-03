@@ -140,6 +140,9 @@ int main(int argc, char* argv[])
     init_timer();
     log_init(0);
 
+    // default ip address
+    net_client_set_server_ip("66.228.36.123");
+
     screen = SCREEN_HOME;
     parse_args(argc, argv);
 
@@ -451,7 +454,6 @@ void draw_home(bool is_client)
                 screen = SCREEN_GAME_START;
                 return;
             case 1:
-                net_client_set_server_ip("66.228.36.123");
                 role = ROLE_CLIENT;
                 screen = SCREEN_GAME_START;
                 return;
