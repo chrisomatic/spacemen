@@ -34,7 +34,7 @@ bool game_debug_enabled = false;
 bool initiate_game = false;
 int num_players = 2;
 float game_end_counter;
-int winner_index = 0;
+uint8_t winner_index = 0;
 int client_id = -1;
 
 GameSettings game_settings = {0};
@@ -777,7 +777,7 @@ void draw_game_start(bool is_client)
 
                 if(imgui_button("Send"))
                 {
-                    int _to = to_sel == 0 ? TO_ALL : to_sel;
+                    int _to = to_sel == 0 ? TO_ALL : to_sel-1;
                     net_client_send_message(_to, "%s", msg);
                 }
                 imgui_horizontal_end();

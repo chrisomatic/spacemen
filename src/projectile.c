@@ -123,6 +123,7 @@ void projectile_add(Player* p, float angle_offset, float energy_usage)
     float xa = cosf(a);
     float ya = sinf(a);
     float _speed = 0;
+
     if(!FEQ0(xa))
     {
         _speed = proj.vel.x / xa;
@@ -264,6 +265,7 @@ void projectile_handle_collisions(float delta_t)
                 }
 
                 server_send_message(j, FROM_SERVER, "%s hit you", player[p->player_id].settings.name);
+                server_send_event(EVENT_TYPE_HIT, p->pos.x, p->pos.y);
 
                 player_hurt(&players[j], p->damage);
                 p->dead = true;

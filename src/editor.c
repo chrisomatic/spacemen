@@ -19,7 +19,7 @@ int player_selection = 0;
 
 
 static ParticleSpawner* particle_spawner; 
-static char particles_file_name[20] = {0};
+static char particles_file_name[33] = {0};
 
 static char* effect_options[100] = {0};
 static int prior_selected_effect = 0;
@@ -69,13 +69,13 @@ static void load_effect_options()
         if(effect_options[i])
             free(effect_options[i]);
     }
-    effect_options[0] = calloc(100,sizeof(char));
+    effect_options[0] = calloc(33,sizeof(char));
     strncpy(effect_options[0], "*New*", 5);
 
     for(int i = 0; i < num_effects; ++i)
     {
-        effect_options[i+1] = calloc(100,sizeof(char));
-        strncpy(effect_options[i+1],particle_effects[i].name, 99);
+        effect_options[i+1] = calloc(33,sizeof(char));
+        strncpy(effect_options[i+1],particle_effects[i].name, 32);
     }
 
 }
@@ -165,7 +165,6 @@ void editor_draw()
                             p->vel.y = 0;
                         }
                     }
-
                 }
                 else
                 {
@@ -266,6 +265,9 @@ void editor_draw()
                 {
                     prior_selected_effect = selected_effect;
                     memcpy(effect,&particle_effects[selected_effect-1],sizeof(ParticleEffect));
+                    
+                    strncpy(particles_file_name,effect_options[selected_effect],32);
+                    remove_extension(particles_file_name);
                 }
 
                 imgui_horizontal_line(1);

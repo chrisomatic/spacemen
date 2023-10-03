@@ -79,7 +79,7 @@ extern bool debug_enabled;
 extern bool game_debug_enabled;
 extern int num_players;
 extern float game_end_counter;
-extern int winner_index;
+extern uint8_t winner_index;
 extern int client_id;
 
 // extern int num_lives;

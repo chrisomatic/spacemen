@@ -38,8 +38,19 @@ typedef enum
     PACKET_TYPE_GAME_SETTINGS,
     PACKET_TYPE_STATE,
     PACKET_TYPE_MESSAGE,
+    PACKET_TYPE_EVENT,
     PACKET_TYPE_ERROR,
 } PacketType;
+
+typedef enum
+{
+    EVENT_TYPE_NONE = 0,
+    EVENT_TYPE_HIT,
+    EVENT_TYPE_HEAL,
+    EVENT_TYPE_HEAL_FULL,
+    EVENT_TYPE_HOLY,
+    EVENT_TYPE_MAX,
+} EventType;
 
 typedef enum
 {
@@ -120,7 +131,9 @@ extern char* server_ip_address;
 
 // Server
 int net_server_start();
+
 void server_send_message(uint8_t to, uint8_t from, char* fmt, ...);
+void server_send_event(EventType event, float x, float y);
 
 // Client
 bool net_client_init();

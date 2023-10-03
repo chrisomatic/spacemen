@@ -9,6 +9,8 @@ EffectEntry effect_map[] = {
     {EFFECT_GUN_SMOKE1,"gun_smoke.effect"},
     {EFFECT_SPARKS1,"sparks1.effect"},
     {EFFECT_HEAL1,"heal1.effect"},
+    {EFFECT_HEAL2,"heal2.effect"},
+    {EFFECT_HOLY1,"holy1.effect"},
     {EFFECT_BLOOD1,"blood1.effect"},
     {EFFECT_DEBRIS1,"debris1.effect"},
     {EFFECT_MELEE1,"melee1.effect"},
@@ -53,6 +55,7 @@ void effects_load_all()
         printf("files[%d]: %s\n",i, filename);
         int index = get_effect_map_index(filename);
         printf("Loading %s into index %d\n",filename, index);
+
         if(index == -1)
         {
             LOGW("Failed to map effect %s",filename);

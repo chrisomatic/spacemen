@@ -33,6 +33,26 @@ static char* io_get_filename(char* full_path)
     return pfile;
 }
 
+static char* remove_extension(char* filename)
+{
+    char* pfile;
+    pfile = filename;
+    int len = strlen(filename);
+
+    for(; pfile < filename + len; pfile++)
+    {
+        if(*pfile == '.')
+        {
+            while(*pfile)
+            {
+                *pfile = '\0';
+                pfile++;
+            }
+        }
+    }
+    return filename;
+}
+
 static int io_get_files_in_dir(char* dir_path, char* match_str, char files[32][32])
 {
 #ifdef _WIN32

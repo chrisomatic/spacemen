@@ -431,22 +431,53 @@ void player_update(Player* p, double delta_t)
 
         // simple check
         bool c1 = rectangles_colliding(&p->hit_box, &pup->hit_box);
-        if(c1)
+        bool c2 = false;
+        if(!c1)
         {
-            pup->picked_up = true;
-            pup->picked_up_player = p;
-            pup->func(p, false);
-            continue;
+            // complex check
+            c2 = are_rects_colliding(&p->hit_box_prior, &p->hit_box, &pup->hit_box);
         }
 
-        // complex check
-        bool c2 = are_rects_colliding(&p->hit_box_prior, &p->hit_box, &pup->hit_box);
-        if(c2)
+        if(c1 || c2)
         {
+            // picked up powerup!
             pup->picked_up = true;
             pup->picked_up_player = p;
             pup->func(p, false);
-            continue;
+
+            if(role == ROLE_SERVER)
+            {
+                switch(pup->type)
+                {
+                    case POWERUP_TYPE_INVINCIBILITY:
+                        server_send_event(EVENT_TYPE_HOLY, pup->pos.x, pup->pos.y);
+                        break;
+                    case POWERUP_TYPE_HEALTH:
+                        server_send_event(EVENT_TYPE_HEAL, pup->pos.x, pup->pos.y);
+                        break;
+                    case POWERUP_TYPE_HEALTH_FULL:
+                        server_send_event(EVENT_TYPE_HEAL_FULL, pup->pos.x, pup->pos.y);
+                        break;
+                    default:
+                        break;
+                }
+                continue;
+            }
+
+            switch(pup->type)
+            {
+                case POWERUP_TYPE_INVINCIBILITY:
+                    particles_spawn_effect(pup->pos.x, pup->pos.y, 1, &particle_effects[EFFECT_HOLY1], 1.0, true, false);
+                    break;
+                case POWERUP_TYPE_HEALTH:
+                    particles_spawn_effect(p->pos.x, p->pos.y, 1, &particle_effects[EFFECT_HEAL1], 1.0, true, false);
+                    break;
+                case POWERUP_TYPE_HEALTH_FULL:
+                    particles_spawn_effect(p->pos.x, p->pos.y, 1, &particle_effects[EFFECT_HEAL2], 1.0, true, false);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -537,8 +568,6 @@ void player_heal(Player* p, float hp)
     {
         p->hp = p->hp_max;
     }
-
-    particles_spawn_effect(p->pos.x, p->pos.y, 1, &particle_effects[EFFECT_HEAL1], 1.0, true, false);
 }
 
 void player_draw(Player* p)

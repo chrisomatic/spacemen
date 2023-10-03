@@ -18,9 +18,10 @@
 #include "settings.h"
 #include "projectile.h"
 #include "powerups.h"
+#include "effects.h"
 
 //#define SERVER_PRINT_SIMPLE 1
-#define SERVER_PRINT_VERBOSE 0
+//#define SERVER_PRINT_VERBOSE 1
 
 
 #if SERVER_PRINT_VERBOSE
@@ -142,6 +143,7 @@ static char* packet_type_to_str(PacketType type)
         case PACKET_TYPE_GAME_SETTINGS: return "GAME SETTINGS";
         case PACKET_TYPE_STATE: return "STATE";
         case PACKET_TYPE_MESSAGE: return "MESSAGE";
+        case PACKET_TYPE_EVENT: return "EVENT";
         case PACKET_TYPE_ERROR: return "ERROR";
         default: return "UNKNOWN";
     }
@@ -415,6 +417,8 @@ static void server_send(PacketType type, ClientInfo* cli)
         case PACKET_TYPE_STATE:
         {
             pack_u8(&pkt, (uint8_t)game_status);
+            pack_u8(&pkt, (uint8_t)winner_index);
+
             pkt.data_len++;
 
             int num_clients = 0;
@@ -432,12 +436,13 @@ static void server_send(PacketType type, ClientInfo* cli)
                     pack_float(&pkt,p->energy);
                     pack_float(&pkt,p->hp);
                     pack_u8(&pkt,p->deaths);
+                    pack_u8(&pkt,p->invincible ? 0x01 : 0x00);
 
                     num_clients++;
                 }
             }
 
-            pkt.data[1] = num_clients;
+            pkt.data[2] = num_clients;
 
             // projectiles
             // if(plist->count > 0)
@@ -1001,6 +1006,32 @@ int net_server_start()
     }
 }
 
+void server_send_event(EventType event, float x, float y)
+{
+    if(role != ROLE_SERVER) return;
+
+    Packet pkt = {
+        .hdr.game_id = GAME_ID,
+        .hdr.id = server.info.local_latest_packet_id,
+        .hdr.type = PACKET_TYPE_EVENT
+    };
+
+    pack_u8(&pkt, (uint8_t)event);
+    pack_float(&pkt, x);
+    pack_float(&pkt, y);
+
+    // send out to all clients
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        ClientInfo* cli = &server.clients[i];
+        if(cli == NULL) continue;
+        if(cli->state != CONNECTED) continue;
+
+        pkt.hdr.ack = cli->remote_latest_packet_id;
+        net_send(&server.info,&cli->address,&pkt);
+    }
+}
+
 void server_send_message(uint8_t to, uint8_t from, char* fmt, ...)
 {
     if(role != ROLE_SERVER)
@@ -1448,6 +1479,7 @@ void net_client_update()
                 case PACKET_TYPE_STATE:
                 {
                     uint8_t gs = unpack_u8(&srvpkt, &offset);
+                    winner_index = (uint8_t)unpack_u8(&srvpkt, &offset);
 
                     num_players = unpack_u8(&srvpkt, &offset);
                     client.player_count = num_players;
@@ -1474,11 +1506,12 @@ void net_client_update()
                             break;
                         }
 
-                        Vector2f pos   = unpack_vec2(&srvpkt, &offset);
-                        float angle    = unpack_float(&srvpkt, &offset);
-                        float energy   = unpack_float(&srvpkt, &offset);
-                        float hp       = unpack_float(&srvpkt, &offset);
-                        uint8_t deaths = unpack_u8(&srvpkt, &offset);
+                        Vector2f pos    = unpack_vec2(&srvpkt, &offset);
+                        float angle     = unpack_float(&srvpkt, &offset);
+                        float energy    = unpack_float(&srvpkt, &offset);
+                        float hp        = unpack_float(&srvpkt, &offset);
+                        uint8_t deaths  = unpack_u8(&srvpkt, &offset);
+                        uint8_t invincible = unpack_u8(&srvpkt, &offset);
 
                         //LOGN("      Pos: %f, %f. Angle: %f", pos.x, pos.y, angle);
 
@@ -1486,6 +1519,7 @@ void net_client_update()
 
                         p->active = true;
                         p->deaths = deaths;
+                        p->invincible = invincible == 0x01 ? true : false;
 
                         ParticleSpawner* jets = get_spawner_by_id(p->jets_id);
                         if(jets)
@@ -1657,6 +1691,32 @@ void net_client_update()
                     }
 
                     text_list_add(text_lst, 5.0, "%s: %s", from_str, msg);
+                } break;
+                
+                case PACKET_TYPE_EVENT:
+                {
+                    EventType event = (EventType)unpack_u8(&srvpkt, &offset);
+
+                    float x = unpack_float(&srvpkt, &offset);
+                    float y = unpack_float(&srvpkt, &offset);
+
+                    switch(event)
+                    {
+                        case EVENT_TYPE_HIT:
+                            particles_spawn_effect(x,y, 1, &particle_effects[EFFECT_EXPLOSION], 0.2, false, false);
+                            break;
+                        case EVENT_TYPE_HEAL:
+                            particles_spawn_effect(x,y, 1, &particle_effects[EFFECT_HEAL1], 1.0, true, false);
+                            break;
+                        case EVENT_TYPE_HEAL_FULL:
+                            particles_spawn_effect(x,y, 1, &particle_effects[EFFECT_HEAL2], 1.0, true, false);
+                            break;
+                        case EVENT_TYPE_HOLY:
+                            particles_spawn_effect(x,y, 1, &particle_effects[EFFECT_HOLY1], 1.0, true, false);
+                        default:
+                            break;
+                    }
+
                 } break;
 
                 case PACKET_TYPE_DISCONNECT:
