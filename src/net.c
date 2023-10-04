@@ -1204,6 +1204,16 @@ bool net_client_data_waiting()
     return data_waiting;
 }
 
+static void client_clear()
+{
+    circbuf_clear_items(&client.input_packets);
+    client.time_of_latest_sent_packet = 0.0;
+    client.time_of_last_ping = 0.0;
+    client.time_of_last_received_ping = 0.0;
+    client.rtt = 0.0;
+
+}
+
 static void client_send(PacketType type)
 {
     Packet pkt = {
@@ -1318,6 +1328,7 @@ int net_client_connect()
 
     for(;;)
     {
+
         client.state = SENDING_CONNECTION_REQUEST;
         client_send(PACKET_TYPE_CONNECT_REQUEST);
 
@@ -1383,6 +1394,7 @@ int net_client_connect()
 
 void net_client_connect_request()
 {
+    client_clear();
     client.state = SENDING_CONNECTION_REQUEST;
     client_send(PACKET_TYPE_CONNECT_REQUEST);
 }
@@ -1732,6 +1744,18 @@ void net_client_update()
     {
         client_send(PACKET_TYPE_PING);
         client.time_of_last_ping = timer_get_time();
+    }
+
+    if(client.state == CONNECTED && client.time_of_last_received_ping > 0.0)
+    {
+        // handle disconnection from server if haven't received ping
+        double time_since_server_ping = timer_get_time() - client.time_of_last_received_ping;
+        if(time_since_server_ping >= DISCONNECTION_TIMEOUT)
+        {
+            LOGN("Server not responding. Elapsed time: %f", time_since_server_ping);
+            net_client_disconnect();
+            screen = SCREEN_HOME;
+        }
     }
 
     // handle publishing inputs

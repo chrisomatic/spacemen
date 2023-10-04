@@ -14,6 +14,11 @@ void circbuf_create(CircBuf* cb, int max_count, size_t item_size)
     cb->buf = malloc(item_size*max_count);
 }
 
+void circbuf_clear_items(CircBuf* cb)
+{
+    cb->count = 0;
+}
+
 void circbuf_delete(CircBuf* cb)
 {
     if(cb->buf)

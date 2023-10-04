@@ -702,6 +702,8 @@ void player_reset(Player* p)
     p->hp = p->hp_max;
     p->dead = false;
     p->deaths = 0;
+
+    memset(p->actions,0, sizeof(p->actions));
 }
 
 // should be equal to num_players
